@@ -203,9 +203,9 @@ export default function RegisterPage() {
 
           <p style={{ fontSize: 11, color: '#aaa', textAlign: 'center', marginTop: 20 }}>
             Dengan mendaftar, Anda menyetujui{' '}
-            <a href="#" style={{ color: '#C9A96E', textDecoration: 'none' }}>Syarat & Ketentuan</a>{' '}
+            <Link href="/terms" style={{ color: '#C9A96E', textDecoration: 'none' }}>Syarat & Ketentuan</Link>{' '}
             dan{' '}
-            <a href="#" style={{ color: '#C9A96E', textDecoration: 'none' }}>Kebijakan Privasi</a> kami.
+            <Link href="/privacy" style={{ color: '#C9A96E', textDecoration: 'none' }}>Kebijakan Privasi</Link> kami.
           </p>
         </motion.div>
       </div>

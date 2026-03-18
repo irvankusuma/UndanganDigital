@@ -5,7 +5,6 @@ import { motion } from 'framer-motion'
 import { Check, X, ExternalLink, ShieldAlert, CreditCard } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import toast from 'react-hot-toast'
-import Image from 'next/image'
 
 export default function AdminTransactionsPage() {
   const [transactions, setTransactions] = useState<any[]>([])
@@ -118,7 +117,7 @@ export default function AdminTransactionsPage() {
                   {new Date(tx.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                 </td>
                 <td style={{ padding: '16px', fontSize: 14, fontWeight: 700, color: '#1e293b' }}>
-                  Rp 30.000
+                  {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(tx.amount || 0)}
                 </td>
                 <td style={{ padding: '16px' }}>
                   {tx.proof_url ? (
