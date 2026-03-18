@@ -1,12 +1,18 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
+import { supabaseBrowserEnv, supabaseConfigErrorMessage } from './config'
+
 export async function createClient() {
   const cookieStore = await cookies()
 
+  if (!supabaseBrowserEnv.url || !supabaseBrowserEnv.key) {
+    throw new Error(supabaseConfigErrorMessage)
+  }
+
   return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    supabaseBrowserEnv.url,
+    supabaseBrowserEnv.key,
     {
       cookies: {
         getAll() {
