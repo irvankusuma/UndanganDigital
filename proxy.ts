@@ -2,6 +2,8 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import { getToken } from 'next-auth/jwt'
 
+import { supabaseBrowserEnv } from '@/lib/supabase/config'
+
 export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname
 
@@ -38,8 +40,8 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next()
   }
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  const supabaseUrl = supabaseBrowserEnv.url
+  const supabaseAnonKey = supabaseBrowserEnv.key
 
   if (!supabaseUrl || !supabaseAnonKey) {
     return NextResponse.next()

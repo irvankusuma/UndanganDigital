@@ -1,17 +1,13 @@
 import { createBrowserClient } from '@supabase/ssr'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+import { supabaseBrowserEnv, supabaseConfigErrorMessage } from './config'
 
-export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey)
-
-export const supabaseConfigErrorMessage =
-  'Konfigurasi Supabase belum tersedia di deployment ini. Tambahkan NEXT_PUBLIC_SUPABASE_URL dan NEXT_PUBLIC_SUPABASE_ANON_KEY di Vercel.'
+export { isSupabaseConfigured, supabaseConfigErrorMessage } from './config'
 
 export function createClient() {
-  if (!supabaseUrl || !supabaseAnonKey) {
+  if (!supabaseBrowserEnv.url || !supabaseBrowserEnv.key) {
     throw new Error(supabaseConfigErrorMessage)
   }
 
-  return createBrowserClient(supabaseUrl, supabaseAnonKey)
+  return createBrowserClient(supabaseBrowserEnv.url, supabaseBrowserEnv.key)
 }
