@@ -55,6 +55,7 @@ CREATE TABLE IF NOT EXISTS public.invitations (
   location_url        TEXT,
   location_map_url    TEXT,
   location_embed      TEXT,
+  akad_location_url   TEXT,
   
   -- Design & Theme
   theme               TEXT NOT NULL DEFAULT 'elegant',
@@ -158,6 +159,18 @@ CREATE TABLE IF NOT EXISTS public.gift_accounts (
 );
 
 -- ──────────────────────────────────────────────────────────────
+-- TABLE: saved_payment_methods
+-- ──────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS public.saved_payment_methods (
+    id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id         UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    bank_name       TEXT NOT NULL,
+    account_number  TEXT NOT NULL,
+    account_name    TEXT NOT NULL,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- ──────────────────────────────────────────────────────────────
 -- TABLE: transactions
 -- ──────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS public.transactions (
@@ -217,6 +230,7 @@ ALTER TABLE public.rsvp ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.wishes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.gallery ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.gift_accounts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.saved_payment_methods ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.transactions ENABLE ROW LEVEL SECURITY;
 
 -- 1. Profiles
@@ -261,6 +275,11 @@ CREATE POLICY "Owners can manage gift accounts" ON public.gift_accounts USING (
 CREATE POLICY "Public can view gift accounts" ON public.gift_accounts FOR SELECT USING (true);
 
 -- 8. Transactions
+-- 9. Saved Payment Methods
+CREATE POLICY "Users can manage own saved payments" ON public.saved_payment_methods USING (auth.uid() = user_id);
+CREATE POLICY "Users can insert own saved payments" ON public.saved_payment_methods FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+-- 10. Transactions
 CREATE POLICY "Users can view own transactions" ON public.transactions FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Users can insert own transactions" ON public.transactions FOR INSERT WITH CHECK (auth.uid() = user_id);
 
@@ -274,6 +293,7 @@ CREATE INDEX IF NOT EXISTS idx_rsvp_invitation_id ON public.rsvp(invitation_id);
 CREATE INDEX IF NOT EXISTS idx_wishes_invitation_id ON public.wishes(invitation_id);
 CREATE INDEX IF NOT EXISTS idx_gallery_invitation_id ON public.gallery(invitation_id);
 CREATE INDEX IF NOT EXISTS idx_gift_accounts_invitation_id ON public.gift_accounts(invitation_id);
+CREATE INDEX IF NOT EXISTS idx_saved_payment_methods_user_id ON public.saved_payment_methods(user_id);
 -- ──────────────────────────────────────────────────────────────
 -- STORAGE BUCKETS (Reference)
 -- Run these SQL separately or via Supabase Storage UI

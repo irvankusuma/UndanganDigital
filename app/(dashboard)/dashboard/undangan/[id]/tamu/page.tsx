@@ -1,27 +1,15 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import {
-  ArrowLeft, Plus, Search, Edit2, Trash2, Filter,
-  Download, Share2, ExternalLink, Copy, Check, Send, Users
+  ArrowLeft, Plus, Search, Edit2, Trash2,
+  Download, Copy, Check, Send, Users, Loader
 } from 'lucide-react'
 import toast from 'react-hot-toast'
-
-const MOCK_INVITATION = { id: '1', event_name: 'Andi & Sarah', slug: 'andi-sarah', event_date: '2025-05-24' }
-
-const MOCK_GUESTS = [
-  { id: '1', guest_name: 'Budi Pratama', category: 'family', guest_count: 2, status: 'attending', phone: '081234567890' },
-  { id: '2', guest_name: 'Siti Wahyuni', category: 'coworker', guest_count: 1, status: 'pending', phone: '087654321098' },
-  { id: '3', guest_name: 'Denny Ramadhan', category: 'vip', guest_count: 2, status: 'not_attending', phone: '082345678901' },
-  { id: '4', guest_name: 'Amanda Kusuma', category: 'family', guest_count: 4, status: 'attending', phone: '085678901234' },
-  { id: '5', guest_name: 'Rudi Hartono', category: 'friend', guest_count: 1, status: 'attending', phone: '089012345678' },
-  { id: '6', guest_name: 'Dewi Lestari', category: 'family', guest_count: 3, status: 'pending', phone: '081298765432' },
-  { id: '7', guest_name: 'Eko Santoso', category: 'friend', guest_count: 2, status: 'attending', phone: '082109876543' },
-  { id: '8', guest_name: 'Linda Suryani', category: 'vip', guest_count: 1, status: 'pending', phone: '083321654987' },
-]
+import { createClient } from '@/lib/supabase/client'
 
 const CAT_LABELS: Record<string, { label: string; color: string; bg: string }> = {
   family: { label: 'Keluarga', color: '#6366F1', bg: '#EEF2FF' },
@@ -42,19 +30,57 @@ const FILTERS = ['Semua', 'Keluarga', 'Teman', 'VIP']
 export default function InvitationGuestPage() {
   const params = useParams()
   const invId = params?.id as string
-  const inv = MOCK_INVITATION
 
-  const [guests, setGuests] = useState(MOCK_GUESTS)
+  const [invitation, setInvitation] = useState<any>(null)
+  const [guests, setGuests] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('Semua')
   const [showModal, setShowModal] = useState(false)
   const [copiedId, setCopiedId] = useState<string | null>(null)
-  const [editGuest, setEditGuest] = useState<typeof MOCK_GUESTS[0] | null>(null)
+  const [editGuest, setEditGuest] = useState<any>(null)
   const [form, setForm] = useState({ guest_name: '', phone: '', category: 'family', guest_count: 1 })
+
+  // Fetch invitation + guests from Supabase
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!invId) return
+      try {
+        const supabase = createClient()
+
+        // Fetch invitation
+        const { data: inv, error: invErr } = await supabase
+          .from('invitations')
+          .select('id, event_name, slug, event_date, max_guests')
+          .eq('id', invId)
+          .single()
+
+        if (invErr) throw invErr
+        setInvitation(inv)
+
+        // Fetch guests
+        const { data: guestsData, error: guestsErr } = await supabase
+          .from('guests')
+          .select('*')
+          .eq('invitation_id', invId)
+          .order('created_at', { ascending: false })
+
+        if (guestsErr) throw guestsErr
+        setGuests(guestsData || [])
+      } catch (err: any) {
+        console.error(err)
+        toast.error('Gagal memuat data tamu')
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchData()
+  }, [invId])
 
   const filtered = guests.filter(g => {
     const matchSearch = g.guest_name.toLowerCase().includes(search.toLowerCase()) ||
-      g.phone.includes(search)
+      (g.phone || '').includes(search)
     const matchFilter = filter === 'Semua' ||
       (filter === 'Keluarga' && g.category === 'family') ||
       (filter === 'Teman' && g.category === 'friend') ||
@@ -62,8 +88,8 @@ export default function InvitationGuestPage() {
     return matchSearch && matchFilter
   })
 
-  const totalCount = guests.reduce((acc, g) => acc + g.guest_count, 0)
-  const rsvpCount = guests.filter(g => g.status === 'attending').reduce((acc, g) => acc + g.guest_count, 0)
+  const totalCount = guests.reduce((acc, g) => acc + (g.guest_count || 1), 0)
+  const rsvpCount = guests.filter(g => g.status === 'attending').reduce((acc, g) => acc + (g.guest_count || 1), 0)
   const pendingCount = guests.filter(g => g.status === 'pending').length
 
   const openAdd = () => {
@@ -71,36 +97,79 @@ export default function InvitationGuestPage() {
     setForm({ guest_name: '', phone: '', category: 'family', guest_count: 1 })
     setShowModal(true)
   }
-  const openEdit = (g: typeof MOCK_GUESTS[0]) => {
+  const openEdit = (g: any) => {
     setEditGuest(g)
-    setForm({ guest_name: g.guest_name, phone: g.phone, category: g.category, guest_count: g.guest_count })
+    setForm({ guest_name: g.guest_name, phone: g.phone || '', category: g.category, guest_count: g.guest_count })
     setShowModal(true)
   }
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.guest_name.trim()) { toast.error('Nama tamu harus diisi'); return }
-    if (editGuest) {
-      setGuests(prev => prev.map(g => g.id === editGuest.id ? { ...g, ...form } : g))
-      toast.success('Tamu diperbarui')
-    } else {
-      setGuests(prev => [...prev, { id: Date.now().toString(), status: 'pending', ...form }])
-      toast.success('Tamu ditambahkan')
+    setSaving(true)
+    try {
+      const supabase = createClient()
+      if (editGuest) {
+        // Update existing guest
+        const { error } = await supabase
+          .from('guests')
+          .update({
+            guest_name: form.guest_name,
+            phone: form.phone || null,
+            category: form.category,
+            guest_count: form.guest_count,
+          })
+          .eq('id', editGuest.id)
+
+        if (error) throw error
+        setGuests(prev => prev.map(g => g.id === editGuest.id ? { ...g, ...form } : g))
+        toast.success('Tamu diperbarui')
+      } else {
+        // Insert new guest
+        const { data, error } = await supabase
+          .from('guests')
+          .insert({
+            invitation_id: invId,
+            guest_name: form.guest_name,
+            phone: form.phone || null,
+            category: form.category,
+            guest_count: form.guest_count,
+            status: 'pending',
+          })
+          .select()
+          .single()
+
+        if (error) throw error
+        setGuests(prev => [data, ...prev])
+        toast.success('Tamu ditambahkan')
+      }
+      setShowModal(false)
+    } catch (err: any) {
+      console.error(err)
+      toast.error(err.message || 'Gagal menyimpan tamu')
+    } finally {
+      setSaving(false)
     }
-    setShowModal(false)
   }
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (!confirm('Hapus tamu ini?')) return
-    setGuests(prev => prev.filter(g => g.id !== id))
-    toast.success('Tamu dihapus')
+    try {
+      const supabase = createClient()
+      const { error } = await supabase.from('guests').delete().eq('id', id)
+      if (error) throw error
+      setGuests(prev => prev.filter(g => g.id !== id))
+      toast.success('Tamu dihapus')
+    } catch (err: any) {
+      toast.error('Gagal menghapus tamu')
+    }
   }
 
   const getPersonalLink = (guestName: string) => {
-    const base = typeof window !== 'undefined' ? window.location.origin : 'https://eternalinvite.com'
-    return `${base}/undangan/${inv.slug}?to=${encodeURIComponent(guestName)}`
+    const base = typeof window !== 'undefined' ? window.location.origin : ''
+    return `${base}/undangan/${invitation?.slug || ''}?to=${encodeURIComponent(guestName)}`
   }
 
-  const handleCopyLink = (guest: typeof MOCK_GUESTS[0]) => {
+  const handleCopyLink = (guest: any) => {
     const link = getPersonalLink(guest.guest_name)
     navigator.clipboard.writeText(link)
     setCopiedId(guest.id)
@@ -108,24 +177,49 @@ export default function InvitationGuestPage() {
     toast.success(`Link personal untuk ${guest.guest_name} disalin!`)
   }
 
-  const handleWhatsApp = (guest: typeof MOCK_GUESTS[0]) => {
+  const handleWhatsApp = (guest: any) => {
     const link = getPersonalLink(guest.guest_name)
-    const msg = `Yth. ${guest.guest_name},\n\nKami mengundang Bapak/Ibu/Saudara/i untuk hadir di acara pernikahan kami.\n\n${inv.event_name}\n${new Date(inv.event_date).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}\n\nBuka undangan digital Anda di sini:\n${link}\n\nKonfirmasi kehadiran melalui link di atas.\n\nTerima kasih 💕`
-    const phone = guest.phone.replace(/\D/g, '').replace(/^0/, '62')
-    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank')
+    const eventName = invitation?.event_name || 'acara kami'
+    const eventDate = invitation?.event_date
+      ? new Date(invitation.event_date).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+      : ''
+    const msg = `Yth. ${guest.guest_name},\n\nKami mengundang Bapak/Ibu/Saudara/i untuk hadir di ${eventName}.\n${eventDate ? `\n${eventDate}\n` : ''}\nBuka undangan digital Anda di sini:\n${link}\n\nKonfirmasi kehadiran melalui link di atas.\n\nTerima kasih 💕`
+    const phone = (guest.phone || '').replace(/\D/g, '').replace(/^0/, '62')
+    if (phone) {
+      window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank')
+    } else {
+      navigator.clipboard.writeText(msg)
+      toast.success('Pesan disalin (tamu tidak memiliki nomor WA)')
+    }
   }
 
   const handleExport = () => {
     const csv = ['Nama,Telepon,Kategori,Jumlah,Status,Link Personal',
-      ...guests.map(g => `${g.guest_name},${g.phone},${CAT_LABELS[g.category]?.label || g.category},${g.guest_count},${STATUS_CONFIG[g.status]?.label || g.status},${getPersonalLink(g.guest_name)}`)
+      ...guests.map(g => `${g.guest_name},${g.phone || '-'},${CAT_LABELS[g.category]?.label || g.category},${g.guest_count},${STATUS_CONFIG[g.status]?.label || g.status},${getPersonalLink(g.guest_name)}`)
     ].join('\n')
     const blob = new Blob([csv], { type: 'text/csv' })
     const a = document.createElement('a')
     a.href = URL.createObjectURL(blob)
-    a.download = `tamu-${inv.slug}.csv`
+    a.download = `tamu-${invitation?.slug || 'undangan'}.csv`
     a.click()
     toast.success('Data tamu berhasil diekspor!')
   }
+
+  if (loading) return (
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
+      <Loader className="animate-spin" color="#E8627A" size={36} />
+    </div>
+  )
+
+  if (!invitation) return (
+    <div style={{ textAlign: 'center', padding: 60 }}>
+      <div style={{ fontSize: 40, marginBottom: 16 }}>😕</div>
+      <p style={{ color: '#888' }}>Undangan tidak ditemukan</p>
+      <Link href="/dashboard/undangan" style={{ color: '#E8627A', fontWeight: 600, fontSize: 14, textDecoration: 'none' }}>
+        ← Kembali ke Daftar Undangan
+      </Link>
+    </div>
+  )
 
   return (
     <div>
@@ -135,7 +229,7 @@ export default function InvitationGuestPage() {
           <ArrowLeft size={14} /> Undangan
         </Link>
         <span>/</span>
-        <span style={{ color: '#E8627A', fontWeight: 600 }}>{inv.event_name}</span>
+        <span style={{ color: '#E8627A', fontWeight: 600 }}>{invitation.event_name}</span>
         <span>/</span>
         <span>Manajemen Tamu</span>
       </div>
@@ -145,7 +239,7 @@ export default function InvitationGuestPage() {
         <div>
           <h1 style={{ fontSize: 28, fontWeight: 700, color: '#1a1a1a', marginBottom: 4 }}>Daftar Tamu</h1>
           <p style={{ fontSize: 14, color: '#888' }}>
-            Kelola tamu untuk undangan <strong style={{ color: '#1a1a1a' }}>{inv.event_name}</strong> dan kirim link personal via WhatsApp.
+            Kelola tamu untuk undangan <strong style={{ color: '#1a1a1a' }}>{invitation.event_name}</strong> dan kirim link personal via WhatsApp.
           </p>
         </div>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
@@ -168,7 +262,7 @@ export default function InvitationGuestPage() {
           { label: 'TOTAL UNDANGAN', value: guests.length, sub: 'Tamu', color: '#1a1a1a', icon: <Users size={18} /> },
           { label: 'SUDAH RSVP', value: rsvpCount, sub: `Orang (${totalCount > 0 ? Math.round(rsvpCount / totalCount * 100) : 0}%)`, color: '#10B981', icon: <Check size={18} /> },
           { label: 'MENUNGGU RESPON', value: pendingCount, sub: 'Tamu', color: '#F59E0B', icon: <Send size={18} /> },
-          { label: 'KAPASITAS MAKSIMAL', value: 500, sub: 'Orang', color: '#888', icon: <Users size={18} /> },
+          { label: 'KAPASITAS MAKS', value: invitation.max_guests || '∞', sub: 'Orang', color: '#888', icon: <Users size={18} /> },
         ].map(s => (
           <div key={s.label} style={{ flex: '1 1 180px', background: 'white', borderRadius: 14, padding: '20px 22px', boxShadow: '0 4px 16px rgba(0,0,0,0.05)', border: '1.5px solid #f0f0f0' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
@@ -233,11 +327,11 @@ export default function InvitationGuestPage() {
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         color: 'white', fontSize: 12, fontWeight: 700, flexShrink: 0,
                       }}>
-                        {guest.guest_name.split(' ').map(n => n[0]).join('').substring(0, 2)}
+                        {guest.guest_name.split(' ').map((n: string) => n[0]).join('').substring(0, 2)}
                       </div>
                       <div>
                         <div style={{ fontSize: 14, fontWeight: 600, color: '#1a1a1a' }}>{guest.guest_name}</div>
-                        <div style={{ fontSize: 11, color: '#aaa' }}>{guest.phone}</div>
+                        <div style={{ fontSize: 11, color: '#aaa' }}>{guest.phone || '—'}</div>
                       </div>
                     </div>
                   </td>
@@ -302,23 +396,18 @@ export default function InvitationGuestPage() {
         {filtered.length === 0 && (
           <div style={{ padding: '48px 20px', textAlign: 'center' }}>
             <div style={{ fontSize: 40, marginBottom: 12 }}>👥</div>
-            <div style={{ fontSize: 16, fontWeight: 600, color: '#aaa', marginBottom: 4 }}>Tidak ada tamu ditemukan</div>
-            <div style={{ fontSize: 13, color: '#ccc' }}>Coba ubah filter atau tambahkan tamu baru.</div>
+            <div style={{ fontSize: 16, fontWeight: 600, color: '#aaa', marginBottom: 4 }}>
+              {guests.length === 0 ? 'Belum ada tamu' : 'Tidak ada tamu ditemukan'}
+            </div>
+            <div style={{ fontSize: 13, color: '#ccc' }}>
+              {guests.length === 0 ? 'Mulai tambahkan tamu undangan Anda.' : 'Coba ubah filter atau kata kunci pencarian.'}
+            </div>
           </div>
         )}
 
         {/* Footer */}
-        <div style={{ padding: '14px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #f5f5f5', flexWrap: 'wrap', gap: 10 }}>
+        <div style={{ padding: '14px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #f5f5f5' }}>
           <span style={{ fontSize: 12, color: '#aaa' }}>Menampilkan {filtered.length} dari {guests.length} tamu</span>
-          <div style={{ display: 'flex', gap: 6 }}>
-            {['<', 1, 2, 3, '>'].map((n, i) => (
-              <button key={i} style={{
-                width: 32, height: 32, borderRadius: 8, border: n === 1 ? 'none' : '1px solid #f0f0f0',
-                background: n === 1 ? '#E8627A' : 'white', color: n === 1 ? 'white' : '#666',
-                fontSize: 12, fontWeight: 700, cursor: 'pointer',
-              }}>{n}</button>
-            ))}
-          </div>
         </div>
       </div>
 
@@ -372,7 +461,7 @@ export default function InvitationGuestPage() {
                 <div style={{ background: '#F0FFF4', borderRadius: 10, padding: '12px 14px', border: '1px solid #B6F5CD' }}>
                   <div style={{ fontSize: 11, color: '#10B981', fontWeight: 700, marginBottom: 4 }}>🔗 Link Personal yang Akan Dibuat:</div>
                   <div style={{ fontSize: 11, color: '#555', wordBreak: 'break-all' }}>
-                    /undangan/{inv.slug}?to={encodeURIComponent(form.guest_name)}
+                    /undangan/{invitation.slug}?to={encodeURIComponent(form.guest_name)}
                   </div>
                 </div>
               )}
@@ -383,8 +472,8 @@ export default function InvitationGuestPage() {
                 flex: 1, padding: '12px', borderRadius: 10, border: '1.5px solid #f0f0f0',
                 background: 'white', cursor: 'pointer', fontWeight: 600, color: '#666', fontSize: 14,
               }}>Batal</button>
-              <button onClick={handleSave} className="btn-primary" style={{ flex: 1, fontSize: 14 }}>
-                {editGuest ? 'Simpan Perubahan' : 'Tambah Tamu'}
+              <button onClick={handleSave} disabled={saving} className="btn-primary" style={{ flex: 1, fontSize: 14 }}>
+                {saving ? 'Menyimpan...' : editGuest ? 'Simpan Perubahan' : 'Tambah Tamu'}
               </button>
             </div>
           </motion.div>

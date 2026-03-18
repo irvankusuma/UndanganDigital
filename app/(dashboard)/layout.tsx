@@ -49,7 +49,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         bottom: 0,
         zIndex: 50
       }}>
-        <Sidebar />
+        <Sidebar user={user} />
       </div>
 
       {/* Main Content Area */}
@@ -117,7 +117,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               >
                 <X size={18} />
               </button>
-              <Sidebar onClose={() => setSidebarOpen(false)} />
+              <Sidebar onClose={() => setSidebarOpen(false)} user={user} />
             </motion.div>
           </>
         )}

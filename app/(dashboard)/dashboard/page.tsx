@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import { Users, CheckCircle, Clock, Heart, Eye, Share2, Calendar, MessageCircle, Hourglass } from 'lucide-react'
+import { Users, CheckCircle, Clock, Heart, Eye, Share2, Calendar, MessageCircle, Hourglass, Plus, Gift, Mail } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import toast from 'react-hot-toast'
 
@@ -101,42 +101,57 @@ export default function DashboardPage() {
       {/* Page Header */}
       <div style={{ marginBottom: 40, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 24 }}>
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
-            <div style={{
-              display: 'inline-flex', alignItems: 'center',
-              background: '#FDE8ED', borderRadius: 4, padding: '4px 8px',
-              fontSize: 10, color: '#E8627A', fontWeight: 800,
-              textTransform: 'uppercase', letterSpacing: 1
-            }}>
-              SEDANG MENGELOLA
+          {firstInv && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+              <div style={{
+                display: 'inline-flex', alignItems: 'center',
+                background: '#FDE8ED', borderRadius: 4, padding: '4px 8px',
+                fontSize: 10, color: '#E8627A', fontWeight: 800,
+                textTransform: 'uppercase', letterSpacing: 1
+              }}>
+                SEDANG MENGELOLA
+              </div>
+              <span style={{ fontSize: 13, color: '#475569', fontWeight: 600 }}>
+                Undangan: {firstInv.event_name}
+              </span>
             </div>
-            <span style={{ fontSize: 13, color: '#475569', fontWeight: 600 }}>
-              Undangan: Andi & Sarah
-            </span>
-          </div>
+          )}
           <h1 style={{ fontSize: 'clamp(24px, 4vw, 24px)', fontWeight: 800, color: '#1e293b', letterSpacing: -0.5, marginBottom: 8 }}>
             Ikhtisar Pernikahan
           </h1>
           <p style={{ fontSize: 13, color: '#64748b', maxWidth: 600 }}>
-            Selamat datang kembali! Hari bahagia Anda tinggal 42 hari lagi.
+            {firstInv?.event_date
+              ? `Selamat datang kembali! Hari bahagia Anda tinggal ${Math.max(0, Math.ceil((new Date(firstInv.event_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))} hari lagi.`
+              : 'Selamat datang! Mulai buat undangan digital pertama Anda.'
+            }
           </p>
         </div>
         
-        <button 
-          onClick={handleShare}
-          style={{
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          <Link href="/dashboard/undangan/baru" style={{
             display: 'inline-flex', alignItems: 'center', gap: 8,
-            background: '#E8627A', border: 'none',
-            borderRadius: 8, padding: '10px 16px',
-            fontSize: 13, fontWeight: 700, color: 'white', cursor: 'pointer',
-            boxShadow: '0 4px 12px rgba(232, 98, 122, 0.2)',
-            transition: 'all 0.2s',
-          }}
-          onMouseOver={(e) => { e.currentTarget.style.transform = 'translateY(-2px)' }}
-          onMouseOut={(e) => { e.currentTarget.style.transform = 'translateY(0)' }}
-        >
-          <Share2 size={16} color="white" /> Bagikan Tautan
-        </button>
+            border: '1.5px solid #f0f0f0', borderRadius: 8, padding: '10px 16px',
+            fontSize: 13, fontWeight: 600, color: '#666', cursor: 'pointer',
+            background: 'white', textDecoration: 'none', transition: 'all 0.2s',
+          }}>
+            <Plus size={16} /> Buat Undangan
+          </Link>
+          <button 
+            onClick={handleShare}
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 8,
+              background: '#E8627A', border: 'none',
+              borderRadius: 8, padding: '10px 16px',
+              fontSize: 13, fontWeight: 700, color: 'white', cursor: 'pointer',
+              boxShadow: '0 4px 12px rgba(232, 98, 122, 0.2)',
+              transition: 'all 0.2s',
+            }}
+            onMouseOver={(e) => { e.currentTarget.style.transform = 'translateY(-2px)' }}
+            onMouseOut={(e) => { e.currentTarget.style.transform = 'translateY(0)' }}
+          >
+            <Share2 size={16} color="white" /> Bagikan Tautan
+          </button>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -239,7 +254,12 @@ export default function DashboardPage() {
             <h4 style={{ fontSize: 14, fontWeight: 700, color: '#1e293b', marginBottom: 16 }}>Tenggat Waktu Terdekat</h4>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13 }}>
               <div style={{ width: 6, height: 6, background: '#E8627A', borderRadius: '50%' }} />
-              <span style={{ fontWeight: 600, color: '#475569' }}>Batas RSVP: <span style={{ color: '#64748b', fontWeight: 500 }}>Dalam 5 hari</span></span>
+              <span style={{ fontWeight: 600, color: '#475569' }}>Batas RSVP: <span style={{ color: '#64748b', fontWeight: 500 }}>
+                {firstInv?.event_date
+                  ? `Dalam ${Math.max(0, Math.ceil((new Date(firstInv.event_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))} hari`
+                  : 'Belum ditentukan'
+                }
+              </span></span>
             </div>
           </div>
         </motion.div>
@@ -440,6 +460,35 @@ export default function DashboardPage() {
           </div>
         </motion.div>
       </div>
+
+      {/* Quick Actions */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.6 }}
+        style={{ 
+          display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 16, marginBottom: 24,
+        }}
+      >
+        {[
+          { label: 'Kelola Undangan', href: '/dashboard/undangan', icon: <Mail size={20} />, color: '#E8627A', bg: '#FDE8ED' },
+          { label: 'Manajemen Tamu', href: '/dashboard/tamu', icon: <Users size={20} />, color: '#3B82F6', bg: '#EFF6FF' },
+          { label: 'Kustomisasi', href: '/dashboard/kustomisasi', icon: <Heart size={20} />, color: '#6366F1', bg: '#EEF2FF' },
+          { label: 'Hadiah Digital', href: '/dashboard/hadiah', icon: <Gift size={20} />, color: '#10B981', bg: '#ECFDF5' },
+        ].map(action => (
+          <Link key={action.label} href={action.href} style={{
+            display: 'flex', alignItems: 'center', gap: 12,
+            background: 'white', borderRadius: 12, padding: '16px 18px',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.04)', border: '1px solid #f1f5f9',
+            textDecoration: 'none', transition: 'all 0.2s',
+          }}>
+            <div style={{ width: 40, height: 40, borderRadius: 10, background: action.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', color: action.color }}>
+              {action.icon}
+            </div>
+            <span style={{ fontSize: 13, fontWeight: 600, color: '#1e293b' }}>{action.label}</span>
+          </Link>
+        ))}
+      </motion.div>
     </motion.div>
   )
 }

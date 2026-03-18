@@ -191,14 +191,18 @@ export default function UndanganPage() {
                   </button>
                 </div>
 
-                <Link href={`/dashboard/undangan/${inv.id}/tamu`} style={{
+                <Link href={
+                  inv.status === 'draft'
+                    ? `/dashboard/undangan/${inv.id}/edit`
+                    : `/dashboard/undangan/${inv.id}/tamu`
+                } style={{
                   textDecoration: 'none', background: inv.status === 'draft' ? '#FDF8F0' : 'linear-gradient(135deg, #E8627A, #C44A62)',
                   color: inv.status === 'draft' ? '#C9A96E' : 'white',
                   border: inv.status === 'draft' ? '1.5px solid #E8D5B0' : 'none',
                   borderRadius: 10, padding: '9px 18px',
                   fontSize: 12, fontWeight: 700,
                 }}>
-                  {inv.status === 'draft' ? 'Lanjutkan Edit' : inv.status === 'completed' ? 'Arsipkan' : 'Kelola Proyek'}
+                  {inv.status === 'draft' ? 'Lanjutkan Edit' : inv.status === 'completed' ? 'Lihat Detail' : 'Kelola Proyek'}
                 </Link>
               </div>
             </motion.div>
