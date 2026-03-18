@@ -7,7 +7,7 @@ import { motion } from 'framer-motion'
 import { ArrowLeft, CheckCircle, Heart, Lock } from 'lucide-react'
 import toast from 'react-hot-toast'
 
-import { createClient } from '@/lib/supabase/client'
+import { createClient, isSupabaseConfigured, supabaseConfigErrorMessage } from '@/lib/supabase/client'
 
 export default function ResetPasswordPage() {
   const router = useRouter()
@@ -98,6 +98,13 @@ export default function ResetPasswordPage() {
             <h1 style={{ fontSize: 28, fontWeight: 700, color: '#1a1a1a', marginBottom: 8 }}>Atur Password Baru</h1>
             <p style={{ fontSize: 14, color: '#888', marginBottom: 28 }}>Masukkan password baru untuk akun Anda agar bisa login kembali.</p>
 
+            {!isSupabaseConfigured && (
+              <div style={{ marginBottom: 20, padding: '14px 16px', borderRadius: 12, background: '#FEF2F2', border: '1px solid #FECACA', color: '#B91C1C', fontSize: 13, lineHeight: 1.6 }}>
+                <strong>Reset password belum bisa dipakai.</strong><br />
+                {supabaseConfigErrorMessage}
+              </div>
+            )}
+
             <form onSubmit={handleSubmit}>
               <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#444', marginBottom: 8 }}>Password Baru</label>
               <div style={{ position: 'relative', marginBottom: 18 }}>
@@ -111,7 +118,7 @@ export default function ResetPasswordPage() {
                 <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required className="input-elegant" placeholder="Ulangi password baru" style={{ paddingLeft: 42 }} />
               </div>
 
-              <button type="submit" disabled={loading} className="btn-primary" style={{ width: '100%', fontSize: 15, opacity: loading ? 0.7 : 1 }}>
+              <button type="submit" disabled={loading || !isSupabaseConfigured} className="btn-primary" style={{ width: '100%', fontSize: 15, opacity: loading || !isSupabaseConfigured ? 0.7 : 1 }}>
                 {loading ? 'Menyimpan...' : 'Simpan Password Baru'}
               </button>
             </form>

@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Heart, Mail, Lock, User, Eye, EyeOff, ArrowLeft, CheckCircle } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { createClient } from '@/lib/supabase/client'
+import { createClient, isSupabaseConfigured, supabaseConfigErrorMessage } from '@/lib/supabase/client'
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -127,6 +127,13 @@ export default function RegisterPage() {
           <h1 style={{ fontSize: 28, fontWeight: 700, color: '#1a1a1a', marginBottom: 6, marginTop: 16 }}>Buat Akun Baru</h1>
           <p style={{ fontSize: 14, color: '#888', marginBottom: 32 }}>Bergabung dan buat undangan pertama Anda</p>
 
+          {!isSupabaseConfigured && (
+            <div style={{ marginBottom: 20, padding: '14px 16px', borderRadius: 12, background: '#FEF2F2', border: '1px solid #FECACA', color: '#B91C1C', fontSize: 13, lineHeight: 1.6 }}>
+              <strong>Pendaftaran belum bisa dipakai.</strong><br />
+              {supabaseConfigErrorMessage}
+            </div>
+          )}
+
           <form onSubmit={handleRegister}>
             {/* Name */}
             <div style={{ marginBottom: 16 }}>
@@ -191,7 +198,7 @@ export default function RegisterPage() {
               )}
             </div>
 
-            <button type="submit" disabled={loading} className="btn-primary" style={{ width: '100%', fontSize: 15, opacity: loading ? 0.7 : 1 }}>
+            <button type="submit" disabled={loading || !isSupabaseConfigured} className="btn-primary" style={{ width: '100%', fontSize: 15, opacity: loading || !isSupabaseConfigured ? 0.7 : 1 }}>
               {loading ? 'Mendaftar...' : 'Daftar Sekarang'}
             </button>
           </form>
