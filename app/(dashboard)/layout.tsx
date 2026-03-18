@@ -21,14 +21,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     const getUser = async () => {
       const supabase = createClient()
       const { data: { user: authUser } } = await supabase.auth.getUser()
-      if (authUser) {
-        const { data: profile } = await supabase.from('profiles').select('id, name, email, plan').eq('id', authUser.id).single()
-        if (profile) setUser(profile)
-        else setUser({ id: authUser.id, name: authUser.email?.split('@')[0] || 'User', email: authUser.email || '', plan: 'free' })
+
+      if (!authUser) {
+        router.push('/login')
+        router.refresh()
+        return
       }
+
+      const { data: profile } = await supabase.from('profiles').select('id, name, email, plan').eq('id', authUser.id).single()
+      if (profile) setUser(profile)
+      else setUser({ id: authUser.id, name: authUser.email?.split('@')[0] || 'User', email: authUser.email || '', plan: 'free' })
     }
     getUser()
-  }, [])
+  }, [router])
 
   const handleLogout = async () => {
     const supabase = createClient()

@@ -3,7 +3,7 @@
 import React from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Heart, LayoutDashboard, Mail, Users, Palette, MessageSquare, Gift, Settings, Crown } from 'lucide-react'
+import { Heart, LayoutDashboard, Mail, Users, Palette, MessageSquare, Gift, Settings, Crown, ShieldAlert } from 'lucide-react'
 
 const SIDEBAR_ITEMS = [
   { icon: LayoutDashboard, label: 'Dashboard', href: '/dashboard' },
@@ -73,6 +73,16 @@ export function Sidebar({ onClose, user }: SidebarProps) {
             </Link>
           )
         })}
+        <Link href="/dashboard/admin/transactions" onClick={onClose} style={{
+          display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px',
+          borderRadius: 8, textDecoration: 'none', marginBottom: 4, marginTop: 8,
+          background: pathname.startsWith('/dashboard/admin') ? '#FEF2F2' : 'transparent',
+          color: pathname.startsWith('/dashboard/admin') ? '#EF4444' : '#94a3b8',
+          fontWeight: 500, fontSize: 13, transition: 'all 0.2s', borderTop: '1px solid #f5f5f5', paddingTop: 14,
+        }}>
+          <ShieldAlert size={18} style={{ opacity: 0.7 }} />
+          <span>Admin Panel</span>
+        </Link>
       </nav>
 
       {/* Upgrade CTA */}
