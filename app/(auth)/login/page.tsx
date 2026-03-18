@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Heart, Mail, Lock, Eye, EyeOff, ArrowLeft } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { createClient } from '@/lib/supabase/client'
+import { createClient, isSupabaseConfigured, supabaseConfigErrorMessage } from '@/lib/supabase/client'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -96,6 +96,13 @@ export default function LoginPage() {
           <h1 style={{ fontSize: 28, fontWeight: 700, color: '#1a1a1a', marginBottom: 6, marginTop: 16 }}>Masuk ke Akun</h1>
           <p style={{ fontSize: 14, color: '#888', marginBottom: 32 }}>Masukkan email dan password Anda</p>
 
+          {!isSupabaseConfigured && (
+            <div style={{ marginBottom: 20, padding: '14px 16px', borderRadius: 12, background: '#FEF2F2', border: '1px solid #FECACA', color: '#B91C1C', fontSize: 13, lineHeight: 1.6 }}>
+              <strong>Login belum bisa dipakai.</strong><br />
+              {supabaseConfigErrorMessage}
+            </div>
+          )}
+
           <form onSubmit={handleLogin}>
             {/* Email */}
             <div style={{ marginBottom: 20 }}>
@@ -145,7 +152,7 @@ export default function LoginPage() {
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !isSupabaseConfigured}
               className="btn-primary"
               style={{ width: '100%', fontSize: 15, opacity: loading ? 0.7 : 1 }}
             >
