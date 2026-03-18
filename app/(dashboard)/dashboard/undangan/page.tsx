@@ -7,27 +7,6 @@ import { Plus, Eye, Trash2, Copy, Calendar, Heart, Edit3, Archive } from 'lucide
 import { createClient } from '@/lib/supabase/client'
 import toast from 'react-hot-toast'
 
-const MOCK_INVITATIONS = [
-  {
-    id: '1', event_name: 'Andi & Sarah', slug: 'andi-sarah',
-    status: 'active', event_date: '2024-12-12',
-    bride_name: 'Sarah', groom_name: 'Andi',
-    _rsvpCount: 85, _guestCount: 150,
-  },
-  {
-    id: '2', event_name: 'Budi & Jessica', slug: 'budi-jessica',
-    status: 'draft', event_date: '2025-01-25',
-    bride_name: 'Jessica', groom_name: 'Budi',
-    _rsvpCount: 0, _guestCount: 0,
-  },
-  {
-    id: '3', event_name: 'Rizky & Fitri', slug: 'rizky-fitri',
-    status: 'completed', event_date: '2023-10-15',
-    bride_name: 'Fitri', groom_name: 'Rizky',
-    _rsvpCount: 120, _guestCount: 130,
-  },
-]
-
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
   active: { label: 'AKTIF', color: '#10B981', bg: '#ECFDF5' },
   draft: { label: 'DRAFT', color: '#F59E0B', bg: '#FFFBEB' },
@@ -38,8 +17,8 @@ const TABS = ['Semua', 'Aktif', 'Draft', 'Selesai']
 
 export default function UndanganPage() {
   const [activeTab, setActiveTab] = useState('Semua')
-  const [invitations, setInvitations] = useState(MOCK_INVITATIONS)
-  const [loading, setLoading] = useState(false)
+  const [invitations, setInvitations] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const load = async () => {

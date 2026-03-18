@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { getToken } from 'next-auth/jwt'
 
 export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
@@ -23,14 +24,35 @@ export async function proxy(request: NextRequest) {
     }
   )
 
+  // --- NEXTAUTH LOGIC (ADMIN) ---
+  const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET })
+  const isAuthAdmin = !!token
+  const pathname = request.nextUrl.pathname
+
+  // Redirect / to /login
+  if (pathname === '/') {
+    return NextResponse.redirect(new URL('/login', request.url))
+  }
+
+  // Protect /admin/dashboard
+  if (pathname.startsWith('/admin/dashboard') && !isAuthAdmin) {
+    return NextResponse.redirect(new URL('/admin/login', request.url))
+  }
+
+  // Redirect logged in admin away from login page
+  if (pathname === '/admin/login' && isAuthAdmin) {
+    return NextResponse.redirect(new URL('/admin/dashboard', request.url))
+  }
+
+  // --- SUPABASE LOGIC (DASHBOARD) ---
   // Refresh session if expired
   const { data: { user } } = await supabase.auth.getUser()
 
   // Protect dashboard and settings routes
   const isProtectedRoute = 
-    request.nextUrl.pathname.startsWith('/dashboard') ||
-    request.nextUrl.pathname.startsWith('/undangan/baru') ||
-    request.nextUrl.pathname.startsWith('/pengaturan')
+    pathname.startsWith('/dashboard') ||
+    pathname.startsWith('/undangan/baru') ||
+    pathname.startsWith('/pengaturan')
 
   if (isProtectedRoute && !user) {
     const url = request.nextUrl.clone()
@@ -40,8 +62,8 @@ export async function proxy(request: NextRequest) {
 
   // Redirect logged in users away from auth pages
   const isAuthRoute = 
-    request.nextUrl.pathname === '/login' || 
-    request.nextUrl.pathname === '/register'
+    pathname === '/login' || 
+    pathname === '/register'
 
   if (isAuthRoute && user) {
     const url = request.nextUrl.clone()
@@ -54,6 +76,11 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
+    '/',
+    '/admin/:path*',
+    '/dashboard/:path*',
+    '/undangan/baru',
+    '/pengaturan/:path*',
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }

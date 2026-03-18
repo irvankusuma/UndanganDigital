@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import { Users, CheckCircle, Clock, Heart, TrendingUp, Eye, Share2, Calendar, MessageCircle, Hourglass, Utensils } from 'lucide-react'
+import { Users, CheckCircle, Clock, Heart, Eye, Share2, Calendar, MessageCircle, Hourglass } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import toast from 'react-hot-toast'
 
@@ -76,19 +76,19 @@ export default function DashboardPage() {
     toast.success('Link undangan berhasil disalin! 📋')
   }
 
-  const STATS_CARDS = [
-    { label: 'Total Tamu', value: '150', icon: Users, color: '#3B82F6', bg: '#EFF6FF', tag: '+5%', tagColor: '#10B981', tagBg: '#D1FAE5', tagType: 'badge' },
-    { label: 'RSVP Diterima', value: '85', icon: CheckCircle, color: '#10B981', bg: '#ECFDF5', tag: '+12%', tagColor: '#10B981', tagBg: '#D1FAE5', tagType: 'badge' },
-    { label: 'Menunggu Respon', value: '43%', icon: Hourglass, color: '#F59E0B', bg: '#FFFBEB', tag: '65 Menunggu', tagColor: '#64748b', tagType: 'text' },
-    { label: 'Hidangan Dipilih', value: '72', icon: Utensils, color: '#db2777', bg: '#fdf2f8', tag: '12 Veg', tagColor: '#64748b', tagType: 'text' },
-  ]
-
   const firstInv = invitations[0] || null
   const hasGuests = stats.totalTamu > 0
 
   const presentPercent = stats.totalTamu ? Math.round((stats.tamuHadir / stats.totalTamu) * 100) : 0;
   const absentPercent = stats.totalTamu ? Math.round((stats.tamuBerhalangan / stats.totalTamu) * 100) : 0;
   const pendingPercent = stats.totalTamu ? Math.round((stats.tamuPending / stats.totalTamu) * 100) : 0;
+
+  const STATS_CARDS = [
+    { label: 'Total Tamu', value: String(stats.totalTamu), icon: Users, color: '#3B82F6', bg: '#EFF6FF', tag: stats.totalTamu > 0 ? `${stats.totalTamu} orang` : 'Belum ada', tagColor: '#10B981', tagBg: '#D1FAE5', tagType: stats.totalTamu > 0 ? 'badge' : 'text' },
+    { label: 'RSVP Diterima', value: String(stats.tamuHadir), icon: CheckCircle, color: '#10B981', bg: '#ECFDF5', tag: stats.totalTamu > 0 ? `${presentPercent}%` : '0%', tagColor: '#10B981', tagBg: '#D1FAE5', tagType: 'badge' },
+    { label: 'Menunggu Respon', value: String(stats.tamuPending), icon: Hourglass, color: '#F59E0B', bg: '#FFFBEB', tag: `${stats.tamuPending} Menunggu`, tagColor: '#64748b', tagType: 'text' },
+    { label: 'Total Ucapan', value: String(stats.totalUcapan), icon: MessageCircle, color: '#db2777', bg: '#fdf2f8', tag: stats.totalUcapan > 0 ? `${stats.totalUcapan} ucapan` : 'Belum ada', tagColor: '#64748b', tagType: 'text' },
+  ]
 
   if (loading) return (
     <div style={{ height: '60vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
