@@ -120,12 +120,12 @@ export function RSVPSection({ rsvp, setRsvp, onSubmit, colorHex, tFont }: RSVPSe
                   </button>
                   <button 
                     type="button"
-                    onClick={() => setRsvp({ ...rsvp, attendance: 'declined' })}
+                    onClick={() => setRsvp({ ...rsvp, attendance: 'not_attending' })}
                     style={{ 
                       padding: '16px', borderRadius: 16, border: '2px solid',
-                      borderColor: rsvp.attendance === 'declined' ? '#EF4444' : '#f0f0f0',
-                      background: rsvp.attendance === 'declined' ? '#FEF2F2' : 'white',
-                      color: rsvp.attendance === 'declined' ? '#EF4444' : '#666',
+                      borderColor: rsvp.attendance === 'not_attending' ? '#EF4444' : '#f0f0f0',
+                      background: rsvp.attendance === 'not_attending' ? '#FEF2F2' : 'white',
+                      color: rsvp.attendance === 'not_attending' ? '#EF4444' : '#666',
                       fontSize: 14, fontWeight: 600, cursor: 'pointer', transition: 'all 0.3s ease'
                     }}
                   >

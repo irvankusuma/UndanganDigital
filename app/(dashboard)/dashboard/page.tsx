@@ -48,7 +48,7 @@ export default function DashboardPage() {
           totalUndangan: invs.length,
           totalTamu: guests?.length || 0,
           tamuHadir: guests?.filter(g => g.status === 'attending').length || 0,
-          tamuBerhalangan: guests?.filter(g => g.status === 'declined').length || 0,
+          tamuBerhalangan: guests?.filter(g => g.status === 'not_attending').length || 0,
           tamuPending: guests?.filter(g => g.status === 'pending').length || 0,
           totalUcapan: wishes?.length || 0
         })

@@ -5,7 +5,6 @@ import { motion } from 'framer-motion'
 import { Check, X, ExternalLink, ShieldAlert, CreditCard } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import toast from 'react-hot-toast'
-import Image from 'next/image'
 
 export default function AdminTransactionsPage() {
   const [transactions, setTransactions] = useState<any[]>([])
@@ -36,7 +35,7 @@ export default function AdminTransactionsPage() {
     }
   }
 
-  const handleAction = async (id: string, action: 'approve' | 'reject', userId: string) => {
+  const handleAction = async (id: string, action: 'approve' | 'reject', userId?: string) => {
     const loadingToast = toast.loading('Memproses...')
     try {
       const supabase = createClient()
@@ -53,13 +52,17 @@ export default function AdminTransactionsPage() {
 
       // If approved, update user plan
       if (action === 'approve') {
+        if (!userId) {
+          throw new Error('User ID tidak valid (undefined). Tidak dapat memperbarui status paket pengguna.')
+        }
+
         const expiresAt = new Date()
         expiresAt.setMonth(expiresAt.getMonth() + 1) // 1 Month Pro Plan
 
         const { error: profileError } = await supabase
           .from('profiles')
           .update({ 
-            plan: 'pro',
+            plan: 'premium',
             plan_expires_at: expiresAt.toISOString()
           })
           .eq('id', userId)
@@ -67,11 +70,11 @@ export default function AdminTransactionsPage() {
         if (profileError) throw profileError
       }
 
-      toast.success(action === 'approve' ? 'Transaksi disetujui, Paket Pro aktif.' : 'Transaksi ditolak.', { id: loadingToast })
+      toast.success(action === 'approve' ? 'Transaksi disetujui, Paket Premium aktif.' : 'Transaksi ditolak.', { id: loadingToast })
       fetchTransactions() // Reload data
       
     } catch (error: any) {
-      toast.error('Gagal memproses transaksi.', { id: loadingToast })
+      toast.error(error?.message || 'Gagal memproses transaksi.', { id: loadingToast })
       console.error(error)
     }
   }
@@ -108,17 +111,20 @@ export default function AdminTransactionsPage() {
             </tr>
           </thead>
           <tbody>
-            {transactions.length > 0 ? transactions.map((tx) => (
+            {transactions.length > 0 ? transactions.map((tx) => {
+              const profile = Array.isArray(tx.profiles) ? tx.profiles[0] : tx.profiles;
+              
+              return (
               <tr key={tx.id} style={{ borderBottom: '1px solid #f8fafc' }}>
                 <td style={{ padding: '16px' }}>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: '#1e293b' }}>{tx.profiles?.name || 'Unknown'}</div>
-                  <div style={{ fontSize: 12, color: '#64748b' }}>{tx.profiles?.email}</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: '#1e293b' }}>{profile?.name || 'Unknown'}</div>
+                  <div style={{ fontSize: 12, color: '#64748b' }}>{profile?.email}</div>
                 </td>
                 <td style={{ padding: '16px', fontSize: 13, color: '#64748b' }}>
                   {new Date(tx.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                 </td>
                 <td style={{ padding: '16px', fontSize: 14, fontWeight: 700, color: '#1e293b' }}>
-                  Rp 30.000
+                  {new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(tx.amount || 0)}
                 </td>
                 <td style={{ padding: '16px' }}>
                   {tx.proof_url ? (
@@ -142,14 +148,14 @@ export default function AdminTransactionsPage() {
                   {tx.status === 'pending' && (
                     <div style={{ display: 'flex', gap: 8 }}>
                       <button 
-                        onClick={() => handleAction(tx.id, 'approve', tx.profiles.id)}
+                        onClick={() => handleAction(tx.id, 'approve', profile?.id)}
                         style={{ background: '#10B98115', color: '#10B981', border: 'none', borderRadius: 8, padding: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                         title="Setujui & Aktifkan Pro"
                       >
                         <Check size={16} />
                       </button>
                       <button 
-                        onClick={() => handleAction(tx.id, 'reject', tx.profiles.id)}
+                        onClick={() => handleAction(tx.id, 'reject', profile?.id)}
                         style={{ background: '#EF444415', color: '#EF4444', border: 'none', borderRadius: 8, padding: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                         title="Tolak Pembayaran"
                       >
@@ -159,7 +165,7 @@ export default function AdminTransactionsPage() {
                   )}
                 </td>
               </tr>
-            )) : (
+            )}) : (
               <tr>
                 <td colSpan={6} style={{ padding: '60px 0', textAlign: 'center', color: '#94a3b8' }}>
                   <CreditCard size={32} style={{ opacity: 0.2, margin: '0 auto 12px' }} />

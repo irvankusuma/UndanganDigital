@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { Download, Plus, Eye, EyeOff } from 'lucide-react'
+import { Download, Eye, EyeOff } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 import { createClient } from '@/lib/supabase/client'
@@ -100,9 +100,6 @@ export default function PesanPage() {
             fontSize: 13, fontWeight: 600, color: '#666', cursor: 'pointer', background: 'white',
           }}>
             <Download size={15} /> Ekspor Data
-          </button>
-          <button className="btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
-            <Plus size={15} /> Buat Baru
           </button>
         </div>
       </div>

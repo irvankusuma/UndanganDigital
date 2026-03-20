@@ -11,7 +11,7 @@ interface FooterSectionProps {
 
 export function FooterSection({ inv, colorHex, tFont }: FooterSectionProps) {
   return (
-    <footer style={{ padding: '100px 24px', background: '#ffffff', textAlign: 'center' }}>
+    <footer style={{ padding: '14px 24px', background: '#ffffff', textAlign: 'center' }}>
       <div style={{ maxWidth: 600, margin: '0 auto' }}>
         {/* Elegant Closing Text */}
         <motion.div
@@ -49,11 +49,10 @@ export function FooterSection({ inv, colorHex, tFont }: FooterSectionProps) {
             fontSize: 10, 
             color: '#aaa', 
             letterSpacing: 1, 
-            textTransform: 'uppercase',
             fontWeight: 500,
             margin: 0
           }}>
-            Created with Love by <span style={{ fontWeight: 800, color: '#888' }}>Eternal Invite</span> &copy; 2024 eternalinvite.com
+            Created by Irvan Kusuma <span style={{ fontWeight: 800, color: '#888' }}>ETERNAL INVITE</span> &copy; 2026 eternalinvite.com
           </p>
         </div>
       </div>

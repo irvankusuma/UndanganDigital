@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Heart, Mail, Lock, Eye, EyeOff, ArrowLeft } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { createClient } from '@/lib/supabase/client'
+import { createClient, isSupabaseConfigured, supabaseConfigErrorMessage } from '@/lib/supabase/client'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -45,14 +45,14 @@ export default function LoginPage() {
         padding: 60, position: 'relative', overflow: 'hidden',
       }}>
         {/* Decorative circles */}
-        <div style={{ position: 'absolute', top: -80, left: -80, width: 300, height: 300, borderRadius: '50%', background: 'rgba(255,255,255,0.08)' }} />
-        <div style={{ position: 'absolute', bottom: -60, right: -60, width: 250, height: 250, borderRadius: '50%', background: 'rgba(255,255,255,0.08)' }} />
+        <div style={{ position: 'absolute', top: -80, left: -80, width: 300, height: 300, borderRadius: '50%', background: 'rgba(255,255,255,0.08)', pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', bottom: -60, right: -60, width: 250, height: 250, borderRadius: '50%', background: 'rgba(255,255,255,0.08)', pointerEvents: 'none' }} />
 
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
-          style={{ textAlign: 'center', position: 'relative', zIndex: 1 }}
+          style={{ textAlign: 'center', position: 'relative', zIndex: 1, pointerEvents: 'none' }}
         >
           <div style={{ fontSize: 60, marginBottom: 24 }}>💌</div>
           <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 32, fontWeight: 700, color: 'white', marginBottom: 16 }}>
@@ -95,6 +95,13 @@ export default function LoginPage() {
 
           <h1 style={{ fontSize: 28, fontWeight: 700, color: '#1a1a1a', marginBottom: 6, marginTop: 16 }}>Masuk ke Akun</h1>
           <p style={{ fontSize: 14, color: '#888', marginBottom: 32 }}>Masukkan email dan password Anda</p>
+
+          {!isSupabaseConfigured && (
+            <div style={{ marginBottom: 20, padding: '14px 16px', borderRadius: 12, background: '#FEF2F2', border: '1px solid #FECACA', color: '#B91C1C', fontSize: 13, lineHeight: 1.6 }}>
+              <strong>Login belum bisa dipakai.</strong><br />
+              {supabaseConfigErrorMessage}
+            </div>
+          )}
 
           <form onSubmit={handleLogin}>
             {/* Email */}
@@ -145,7 +152,7 @@ export default function LoginPage() {
 
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || !isSupabaseConfigured}
               className="btn-primary"
               style={{ width: '100%', fontSize: 15, opacity: loading ? 0.7 : 1 }}
             >

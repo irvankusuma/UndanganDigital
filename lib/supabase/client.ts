@@ -1,8 +1,13 @@
 import { createBrowserClient } from '@supabase/ssr'
 
+import { supabaseBrowserEnv, supabaseConfigErrorMessage } from './config'
+
+export { isSupabaseConfigured, supabaseConfigErrorMessage } from './config'
+
 export function createClient() {
-  return createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
+  if (!supabaseBrowserEnv.url || !supabaseBrowserEnv.key) {
+    throw new Error(supabaseConfigErrorMessage)
+  }
+
+  return createBrowserClient(supabaseBrowserEnv.url, supabaseBrowserEnv.key)
 }

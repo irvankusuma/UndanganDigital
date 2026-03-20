@@ -57,7 +57,16 @@ export default function EditInvitationPage() {
     bride_mother_name: '',
     groom_father_name: '',
     groom_mother_name: '',
+    bride_child_order: '',
+    groom_child_order: '',
+    bride_father_is_deceased: false,
+    bride_mother_is_deceased: false,
+    groom_father_is_deceased: false,
+    groom_mother_is_deceased: false,
+    bride_photo: '',
+    groom_photo: '',
   })
+  const [uploading, setUploading] = useState(false)
 
   // Load actual data
   useEffect(() => {
@@ -86,6 +95,32 @@ export default function EditInvitationPage() {
   }, [invId])
 
   const update = (field: string, value: unknown) => setForm(prev => ({ ...prev, [field]: value }))
+
+  const handleProfilePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'bride' | 'groom') => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setUploading(true)
+    const supabase = createClient()
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Silakan login kembali')
+
+      const fileExt = file.name.split('.').pop()
+      const fileName = `${user.id}/profile-${type}-${Date.now()}.${fileExt}`
+      
+      const { error: uploadError } = await supabase.storage.from('gallery').upload(fileName, file)
+      if (uploadError) throw uploadError
+
+      const { data: { publicUrl } } = supabase.storage.from('gallery').getPublicUrl(fileName)
+      update(type === 'bride' ? 'bride_photo' : 'groom_photo', publicUrl)
+      toast.success('Foto profil berhasil diunggah')
+    } catch (err: any) {
+      toast.error(err.message || 'Gagal mengunggah foto profil')
+    } finally {
+      setUploading(false)
+    }
+  }
 
   const handleSave = async () => {
     setLoading(true)
@@ -116,6 +151,14 @@ export default function EditInvitationPage() {
         bride_mother_name: form.bride_mother_name || null,
         groom_father_name: form.groom_father_name || null,
         groom_mother_name: form.groom_mother_name || null,
+        bride_child_order: form.bride_child_order || null,
+        groom_child_order: form.groom_child_order || null,
+        bride_father_is_deceased: form.bride_father_is_deceased,
+        bride_mother_is_deceased: form.bride_mother_is_deceased,
+        groom_father_is_deceased: form.groom_father_is_deceased,
+        groom_mother_is_deceased: form.groom_mother_is_deceased,
+        bride_photo: form.bride_photo || null,
+        groom_photo: form.groom_photo || null,
       }
 
       const { error } = await supabase.from('invitations').update(sanitizedData).eq('id', invId)
@@ -250,45 +293,108 @@ export default function EditInvitationPage() {
           <div>
             <h2 style={{ fontSize: 20, fontWeight: 700, color: '#1a1a1a', marginBottom: 6 }}>Informasi Pasangan / Tokoh</h2>
             <p style={{ fontSize: 13, color: '#aaa', marginBottom: 28 }}>Perbarui nama yang ditampilkan di undangan</p>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20 }}>
-              <div>
-                <label style={{ fontSize: 13, fontWeight: 600, color: '#444', display: 'block', marginBottom: 8 }}>
-                  {form.event_type === 'wedding' ? 'Nama Pengantin Wanita' : 'Nama Utama'}
-                </label>
-                <input value={form.bride_name} onChange={e => update('bride_name', e.target.value)} className="input-elegant" />
+            
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 20 }}>
+              {/* Groom Section (Pria) first */}
+              <div style={{ padding: 20, background: '#FAFAFA', borderRadius: 16, border: '1px solid #eee' }}>
+                <h3 style={{ fontSize: 16, fontWeight: 700, color: '#1a1a1a', marginBottom: 16 }}>
+                  {form.event_type === 'wedding' ? '👨 Pengantin Pria' : '👤 Nama Utama'}
+                </h3>
+                  
+                {/* Photo Upload */}
+                <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#eee', overflow: 'hidden', border: '2px solid white', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+                    {form.groom_photo ? <img src={form.groom_photo} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#aaa' }}><span style={{fontSize: 24}}>📷</span></div>}
+                  </div>
+                  <label style={{ fontSize: 13, fontWeight: 600, color: '#0EA5E9', cursor: 'pointer', padding: '6px 12px', background: '#F0F9FF', borderRadius: 100 }}>
+                    {uploading ? 'Mengunggah...' : 'Pilih Foto'}
+                    <input type="file" hidden accept="image/*" onChange={(e) => handleProfilePhotoUpload(e, 'groom')} disabled={uploading} />
+                  </label>
+                </div>
+
+                <div style={{ marginBottom: 12 }}>
+                  <label style={{ fontSize: 13, fontWeight: 600, color: '#444', display: 'block', marginBottom: 8 }}>Nama Lengkap</label>
+                  <input value={form.groom_name} onChange={e => update('groom_name', e.target.value)} placeholder="Cth: Andi Pratama" className="input-elegant" />
+                </div>
+                  
+                {form.event_type === 'wedding' && (
+                  <>
+                    <div style={{ marginBottom: 12 }}>
+                      <label style={{ fontSize: 13, fontWeight: 600, color: '#444', display: 'block', marginBottom: 8 }}>Putra Ke-</label>
+                      <input value={form.groom_child_order} onChange={e => update('groom_child_order', e.target.value)} placeholder="Cth: Pertama / Kedua / Ke-3" className="input-elegant" />
+                    </div>
+                    <div style={{ marginBottom: 12 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                        <label style={{ fontSize: 13, fontWeight: 600, color: '#444', marginBottom: 0 }}>Nama Ayah</label>
+                        <label style={{ fontSize: 12, color: '#666', display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                          <input type="checkbox" checked={form.groom_father_is_deceased} onChange={e => update('groom_father_is_deceased', e.target.checked)} /> (Alm)
+                        </label>
+                      </div>
+                      <input value={form.groom_father_name} onChange={e => update('groom_father_name', e.target.value)} placeholder="Bapak [Nama]" className="input-elegant" />
+                    </div>
+                    <div style={{ marginBottom: 12 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                        <label style={{ fontSize: 13, fontWeight: 600, color: '#444', marginBottom: 0 }}>Nama Ibu</label>
+                        <label style={{ fontSize: 12, color: '#666', display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                          <input type="checkbox" checked={form.groom_mother_is_deceased} onChange={e => update('groom_mother_is_deceased', e.target.checked)} /> (Almh)
+                        </label>
+                      </div>
+                      <input value={form.groom_mother_name} onChange={e => update('groom_mother_name', e.target.value)} placeholder="Ibu [Nama]" className="input-elegant" />
+                    </div>
+                  </>
+                )}
               </div>
-              <div>
-                <label style={{ fontSize: 13, fontWeight: 600, color: '#444', display: 'block', marginBottom: 8 }}>
-                  {form.event_type === 'wedding' ? 'Nama Pengantin Pria' : 'Nama Kedua (opsional)'}
-                </label>
-                <input value={form.groom_name} onChange={e => update('groom_name', e.target.value)} className="input-elegant" />
+
+              {/* Bride Section (Wanita) second */}
+              <div style={{ padding: 20, background: '#FFF1F2', borderRadius: 16, border: '1px solid #FDE8ED' }}>
+                <h3 style={{ fontSize: 16, fontWeight: 700, color: '#E11D48', marginBottom: 16 }}>
+                  {form.event_type === 'wedding' ? '👩 Pengantin Wanita' : '👤 Nama Kedua (Opsional)'}
+                </h3>
+                  
+                {/* Photo Upload */}
+                <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#eee', overflow: 'hidden', border: '2px solid white', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+                    {form.bride_photo ? <img src={form.bride_photo} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#aaa' }}><span style={{fontSize: 24}}>📷</span></div>}
+                  </div>
+                  <label style={{ fontSize: 13, fontWeight: 600, color: '#E8627A', cursor: 'pointer', padding: '6px 12px', background: 'white', borderRadius: 100 }}>
+                    {uploading ? 'Mengunggah...' : 'Pilih Foto'}
+                    <input type="file" hidden accept="image/*" onChange={(e) => handleProfilePhotoUpload(e, 'bride')} disabled={uploading} />
+                  </label>
+                </div>
+
+                <div style={{ marginBottom: 12 }}>
+                  <label style={{ fontSize: 13, fontWeight: 600, color: '#444', display: 'block', marginBottom: 8 }}>Nama Lengkap</label>
+                  <input value={form.bride_name} onChange={e => update('bride_name', e.target.value)} placeholder="Cth: Sarah Wijaya" className="input-elegant" />
+                </div>
+                  
+                {form.event_type === 'wedding' && (
+                  <>
+                    <div style={{ marginBottom: 12 }}>
+                      <label style={{ fontSize: 13, fontWeight: 600, color: '#444', display: 'block', marginBottom: 8 }}>Putri Ke-</label>
+                      <input value={form.bride_child_order} onChange={e => update('bride_child_order', e.target.value)} placeholder="Cth: Pertama / Kedua / Ke-3" className="input-elegant" />
+                    </div>
+                    <div style={{ marginBottom: 12 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                        <label style={{ fontSize: 13, fontWeight: 600, color: '#444', marginBottom: 0 }}>Nama Ayah</label>
+                        <label style={{ fontSize: 12, color: '#666', display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                          <input type="checkbox" checked={form.bride_father_is_deceased} onChange={e => update('bride_father_is_deceased', e.target.checked)} /> (Alm)
+                        </label>
+                      </div>
+                      <input value={form.bride_father_name} onChange={e => update('bride_father_name', e.target.value)} placeholder="Bapak [Nama]" className="input-elegant" />
+                    </div>
+                    <div style={{ marginBottom: 12 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                        <label style={{ fontSize: 13, fontWeight: 600, color: '#444', marginBottom: 0 }}>Nama Ibu</label>
+                        <label style={{ fontSize: 12, color: '#666', display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                          <input type="checkbox" checked={form.bride_mother_is_deceased} onChange={e => update('bride_mother_is_deceased', e.target.checked)} /> (Almh)
+                        </label>
+                      </div>
+                      <input value={form.bride_mother_name} onChange={e => update('bride_mother_name', e.target.value)} placeholder="Ibu [Nama]" className="input-elegant" />
+                    </div>
+                  </>
+                )}
               </div>
             </div>
-
-            {form.event_type === 'wedding' && (
-              <>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20 }}>
-                  <div>
-                    <label style={{ fontSize: 13, fontWeight: 600, color: '#444', display: 'block', marginBottom: 8 }}>Nama Ayah Mempelai Wanita</label>
-                    <input value={form.bride_father_name} onChange={e => update('bride_father_name', e.target.value)} className="input-elegant" placeholder="Bapak [Nama]" />
-                  </div>
-                  <div>
-                    <label style={{ fontSize: 13, fontWeight: 600, color: '#444', display: 'block', marginBottom: 8 }}>Nama Ibu Mempelai Wanita</label>
-                    <input value={form.bride_mother_name} onChange={e => update('bride_mother_name', e.target.value)} className="input-elegant" placeholder="Ibu [Nama]" />
-                  </div>
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20 }}>
-                  <div>
-                    <label style={{ fontSize: 13, fontWeight: 600, color: '#444', display: 'block', marginBottom: 8 }}>Nama Ayah Mempelai Pria</label>
-                    <input value={form.groom_father_name} onChange={e => update('groom_father_name', e.target.value)} className="input-elegant" placeholder="Bapak [Nama]" />
-                  </div>
-                  <div>
-                    <label style={{ fontSize: 13, fontWeight: 600, color: '#444', display: 'block', marginBottom: 8 }}>Nama Ibu Mempelai Pria</label>
-                    <input value={form.groom_mother_name} onChange={e => update('groom_mother_name', e.target.value)} className="input-elegant" placeholder="Ibu [Nama]" />
-                  </div>
-                </div>
-              </>
-            )}
 
             <div>
               <label style={{ fontSize: 13, fontWeight: 600, color: '#444', display: 'block', marginBottom: 8 }}>Kisah / Cerita</label>

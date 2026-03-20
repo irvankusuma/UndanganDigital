@@ -3,7 +3,7 @@ export type ThemeType = 'elegant' | 'minimalist' | 'romantic' | 'modern' | 'gard
 export type RSVPStatus = 'attending' | 'not_attending' | 'pending'
 export type WishStatus = 'visible' | 'hidden' | 'pending'
 export type GuestCategory = 'family' | 'friend' | 'coworker' | 'vip' | 'other'
-export type InvitationStatus = 'active' | 'draft' | 'completed' | 'archived'
+export type InvitationStatus = 'active' | 'draft' | 'completed'
 
 export interface Profile {
   id: string
@@ -11,7 +11,6 @@ export interface Profile {
   email: string
   avatar_url?: string
   plan: 'free' | 'premium' | 'business'
-  plan_expires_at?: string
   created_at: string
 }
 
@@ -22,8 +21,9 @@ export interface Invitation {
   slug: string
   event_type: EventType
   status: InvitationStatus
-  event_date?: string
-  event_time?: string
+  event_date: string
+
+  // Event details
   akad_date?: string
   akad_location?: string
   akad_time?: string
@@ -31,6 +31,13 @@ export interface Invitation {
   reception_date?: string
   reception_location?: string
   reception_time?: string
+  location_url?: string
+  location_embed?: string
+  location_name?: string
+  location_address?: string
+  location_map_url?: string
+
+  // People
   bride_name?: string
   bride_father_name?: string
   bride_mother_name?: string
@@ -38,8 +45,10 @@ export interface Invitation {
   groom_father_name?: string
   groom_mother_name?: string
   description?: string
-  greeting_text?: string
   story?: string
+  greeting_text?: string
+
+  // Media
   cover_image?: string
   theme: ThemeType
   color_hex?: string
@@ -47,15 +56,8 @@ export interface Invitation {
   font_body?: string
   music_url?: string
   gallery_images?: string[]
-  rsvp_deadline?: string
-  max_guests?: number
-  location_name?: string
-  location_address?: string
-  location_url?: string
-  location_map_url?: string
-  location_embed?: string
 
-  // Feature toggles (DB column names)
+  // Feature toggles — new naming (enable_*)
   enable_rsvp?: boolean
   enable_wishes?: boolean
   enable_gallery?: boolean
@@ -63,14 +65,18 @@ export interface Invitation {
   enable_music?: boolean
   enable_countdown?: boolean
 
-  // Alias names used in some components
+  // Feature toggles — legacy naming (used in undangan page)
   music_enabled?: boolean
   gift_enabled?: boolean
-  countdown_enabled?: boolean
   wishes_enabled?: boolean
-  rsvp_enabled?: boolean
+  countdown_enabled?: boolean
   gallery_enabled?: boolean
+  rsvp_enabled?: boolean
 
+  // Meta
+  view_count?: number
+  rsvp_deadline?: string
+  max_guests?: number
   created_at: string
   updated_at: string
 }
@@ -79,9 +85,9 @@ export interface Guest {
   id: string
   invitation_id: string
   guest_name: string
-  email?: string
   phone?: string
-  category?: GuestCategory
+  email?: string
+  category: GuestCategory
   status: RSVPStatus
   guest_count: number
   notes?: string
@@ -133,24 +139,4 @@ export interface DashboardStats {
   rsvp_pending: number
   total_wishes: number
   pending_wishes: number
-}
-
-// Helper to resolve feature toggle from either naming convention
-export function isFeatureEnabled(inv: Invitation, feature: 'rsvp' | 'wishes' | 'gallery' | 'gifts' | 'music' | 'countdown'): boolean {
-  switch (feature) {
-    case 'rsvp':
-      return inv.enable_rsvp ?? inv.rsvp_enabled ?? true
-    case 'wishes':
-      return inv.enable_wishes ?? inv.wishes_enabled ?? true
-    case 'gallery':
-      return inv.enable_gallery ?? inv.gallery_enabled ?? true
-    case 'gifts':
-      return inv.enable_gifts ?? inv.gift_enabled ?? false
-    case 'music':
-      return inv.enable_music ?? inv.music_enabled ?? false
-    case 'countdown':
-      return inv.enable_countdown ?? inv.countdown_enabled ?? true
-    default:
-      return true
-  }
 }

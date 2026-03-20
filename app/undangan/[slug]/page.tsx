@@ -6,21 +6,11 @@ import toast, { Toaster } from 'react-hot-toast'
 
 import { createClient } from '@/lib/supabase/client'
 import { useCountdown } from '@/lib/hooks/useCountdown'
-import { Invitation, Wish, GiftAccount, RSVP } from '@/types'
+import { Invitation, Wish, GiftAccount, isFeatureEnabled } from '@/types'
 
-// Components
-import { MusicPlayer } from '@/components/invitation/MusicPlayer'
+import { ElegantTheme } from '@/components/templates/ElegantTheme'
+import { MinimalistTheme } from '@/components/templates/MinimalistTheme'
 import { OpeningScreen } from '@/components/invitation/OpeningScreen'
-import { HeroSection } from '@/components/invitation/HeroSection'
-import { CountdownSection } from '@/components/invitation/CountdownSection'
-import { EventSection } from '@/components/invitation/EventSection'
-import { CoupleSection } from '@/components/invitation/CoupleSection'
-import { GallerySection } from '@/components/invitation/GallerySection'
-import { GiftSection } from '@/components/invitation/GiftSection'
-import { RSVPSection } from '@/components/invitation/RSVPSection'
-import { WishesSection } from '@/components/invitation/WishesSection'
-import { FooterSection } from '@/components/invitation/FooterSection'
-import { Lightbox } from '@/components/invitation/Lightbox'
 
 const THEMES = [
   { id: 'elegant', label: 'Rose Elegance', color: '#E8627A', bg: 'linear-gradient(135deg, #FDE8ED, #FFF0F3)', emoji: '🌸', desc: 'Romantis & Elegan' },
@@ -58,7 +48,6 @@ export default function InvitationPage({ params: paramsPromise, searchParams: se
       try {
         const supabase = createClient()
         
-        // Fetch Invitation
         const { data: invData, error: invErr } = await supabase
           .from('invitations')
           .select('*')
@@ -74,7 +63,6 @@ export default function InvitationPage({ params: paramsPromise, searchParams: se
 
         if (isMounted) setInv(invitation)
 
-        // Set Guest Name
         if (sp.to && isMounted) {
           const decodedName = decodeURIComponent(sp.to)
           setGuestName(decodedName)
@@ -82,34 +70,33 @@ export default function InvitationPage({ params: paramsPromise, searchParams: se
         }
 
         // Fetch Wishes
-        if (invitation.wishes_enabled !== false) {
-           const { data: wData } = await supabase
+        if (isFeatureEnabled(invitation, 'wishes')) {
+          const { data: wData } = await supabase
             .from('wishes')
             .select('*')
             .eq('invitation_id', invitation.id)
             .in('status', ['visible', 'pending'])
             .order('created_at', { ascending: false })
             
-           if (wData && isMounted) {
-             setWishes(wData as Wish[])
-           }
+          if (wData && isMounted) {
+            setWishes(wData as Wish[])
+          }
         }
         
         // Fetch Gift Accounts
-        if (invitation.gift_enabled !== false) {
-           const { data: gData } = await supabase
+        if (isFeatureEnabled(invitation, 'gifts')) {
+          const { data: gData } = await supabase
             .from('gift_accounts')
             .select('*')
             .eq('invitation_id', invitation.id)
             .order('created_at', { ascending: true })
             
-           if (gData && isMounted) setGiftAccounts(gData as GiftAccount[])
+          if (gData && isMounted) setGiftAccounts(gData as GiftAccount[])
         }
       } catch (err) {
         console.error('Error fetching data:', err)
       } finally {
         if (isMounted) {
-          // Add a slight artificial delay for a smoother transition
           setTimeout(() => setLoading(false), 800)
         }
       }
@@ -128,32 +115,33 @@ export default function InvitationPage({ params: paramsPromise, searchParams: se
     try {
       const supabase = createClient()
       
-      // Update guests table (Attendance)
+      // Map attendance to correct DB value
+      const attendanceStatus: 'attending' | 'not_attending' = 
+        rsvp.attendance === 'attending' ? 'attending' : 'not_attending'
+      
       const { error: guestErr } = await supabase.from('guests').insert({
         invitation_id: inv?.id,
         guest_name: rsvp.name,
-        status: rsvp.attendance === 'attending' ? 'attending' : 'not_attending',
-        guest_count: rsvp.attendance === 'attending' ? rsvp.count : 0
+        status: attendanceStatus,
+        guest_count: attendanceStatus === 'attending' ? rsvp.count : 0
       })
       
       if (guestErr) throw guestErr
 
-      // Update rsvp table (Consolidated data)
       await supabase.from('rsvp').insert({
         invitation_id: inv?.id,
         guest_name: rsvp.name,
-        attendance_status: rsvp.attendance === 'attending' ? 'attending' : 'not_attending',
-        guest_count: rsvp.attendance === 'attending' ? rsvp.count : 0,
-        message: rsvp.message
+        attendance_status: attendanceStatus,
+        guest_count: attendanceStatus === 'attending' ? rsvp.count : 0,
+        message: rsvp.message || null
       })
 
-      // Insert into wishes table if there is a message
       if (rsvp.message) {
         await supabase.from('wishes').insert({
           invitation_id: inv?.id,
           guest_name: rsvp.name,
           message: rsvp.message,
-          status: 'pending' // Admin can moderate
+          status: 'pending'
         })
       }
 
@@ -175,8 +163,6 @@ export default function InvitationPage({ params: paramsPromise, searchParams: se
     }
   }
 
-
-
   const handleShare = (platform: string) => {
     const url = window.location.href
     const text = `Anda diundang ke pernikahan ${inv?.event_name}! 💍`
@@ -194,15 +180,8 @@ export default function InvitationPage({ params: paramsPromise, searchParams: se
   if (loading) return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-[#FFF9F9]">
       <motion.div 
-        animate={{ 
-          scale: [1, 1.2, 1],
-          rotate: [0, 360]
-        }}
-        transition={{ 
-          duration: 2,
-          repeat: Infinity,
-          ease: "easeInOut"
-        }}
+        animate={{ scale: [1, 1.2, 1], rotate: [0, 360] }}
+        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
         className="text-6xl mb-4"
       >
         🌸
@@ -219,6 +198,7 @@ export default function InvitationPage({ params: paramsPromise, searchParams: se
 
   if (!inv) return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center">
+      <div style={{ fontSize: 64, marginBottom: 16 }}>💌</div>
       <h1 className="text-2xl font-bold text-gray-800 mb-2">Undangan Tidak Ditemukan</h1>
       <p className="text-gray-500">Mohon periksa kembali link undangan Anda.</p>
     </div>
@@ -226,63 +206,22 @@ export default function InvitationPage({ params: paramsPromise, searchParams: se
 
   const activeTheme = THEMES.find(t => t.id === inv.theme) || THEMES[0]
   const colorHex = inv.color_hex || activeTheme.color
-  // @ts-ignore
   const tFont = `'${inv.font_title || 'Playfair Display'}', serif`
-  // @ts-ignore
   const bFont = `'${inv.font_body || 'Poppins'}', sans-serif`
 
   if (!opened) return (
     <OpeningScreen guestName={guestName} inv={inv} onOpen={() => setOpened(true)} colorHex={colorHex} tFont={tFont} bFont={bFont} />
   )
 
-  return (
-    <div style={{ background: '#FFF9F9', minHeight: '100vh', fontFamily: bFont }}>
-      <Toaster position="top-center" reverseOrder={false} />
-      {inv.music_enabled && inv.music_url && <MusicPlayer url={inv.music_url} />}
-      
-      <AnimatePresence>
-        {lightbox && <Lightbox url={lightbox} onClose={() => setLightbox(null)} />}
-      </AnimatePresence>
+  const templateProps = {
+    inv, wishes, giftAccounts, lightbox, setLightbox, copiedGift, setCopiedGift,
+    rsvp, setRsvp, handleRsvp, colorHex, tFont, bFont, countdown
+  }
 
-      <HeroSection inv={inv} activeTheme={activeTheme} colorHex={colorHex} tFont={tFont} />
-      
-      {/* @ts-ignore */}
-      {inv.countdown_enabled !== false && (
-        <CountdownSection countdown={countdown} colorHex={colorHex} tFont={tFont} />
-      )}
+  if (inv.theme === 'minimalist') {
+    return <MinimalistTheme {...templateProps} />
+  }
 
-      <EventSection inv={inv} colorHex={colorHex} tFont={tFont} />
-      <CoupleSection inv={inv} colorHex={colorHex} tFont={tFont} />
-      
-      {/* @ts-ignore */}
-      {inv.gallery_images && (
-        // @ts-ignore
-        <GallerySection images={inv.gallery_images} onImageClick={setLightbox} colorHex={colorHex} tFont={tFont} />
-      )}
-
-      {inv.gift_enabled !== false && (
-        <GiftSection 
-          giftAccounts={giftAccounts} 
-          copiedGift={copiedGift} 
-          onCopy={(acc) => { 
-            setCopiedGift(acc)
-            navigator.clipboard.writeText(acc)
-            toast.success('Berhasil disalin!')
-            setTimeout(() => setCopiedGift(null), 2000)
-          }} 
-          colorHex={colorHex} 
-          tFont={tFont} 
-        />
-      )}
-
-      <RSVPSection rsvp={rsvp} setRsvp={setRsvp} onSubmit={handleRsvp} colorHex={colorHex} tFont={tFont} />
-      
-      {/* @ts-ignore */}
-      {inv.wishes_enabled !== false && (
-        <WishesSection wishes={wishes} colorHex={colorHex} tFont={tFont} />
-      )}
-
-      <FooterSection inv={inv} colorHex={colorHex} tFont={tFont} />
-    </div>
-  )
+  // Default to Elegant for elegant, romantic, modern, garden
+  return <ElegantTheme {...templateProps} />
 }

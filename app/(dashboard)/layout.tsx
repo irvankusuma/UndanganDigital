@@ -16,19 +16,44 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [notifOpen, setNotifOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
   const [user, setUser] = useState<{ id: string; name: string; email: string; plan: string } | null>(null)
+  const [authChecked, setAuthChecked] = useState(false)
 
   useEffect(() => {
     const getUser = async () => {
-      const supabase = createClient()
-      const { data: { user: authUser } } = await supabase.auth.getUser()
-      if (authUser) {
-        const { data: profile } = await supabase.from('profiles').select('id, name, email, plan').eq('id', authUser.id).single()
-        if (profile) setUser(profile)
-        else setUser({ id: authUser.id, name: authUser.email?.split('@')[0] || 'User', email: authUser.email || '', plan: 'free' })
+      try {
+        const supabase = createClient()
+        const { data: { user: authUser } } = await supabase.auth.getUser()
+
+        if (!authUser) {
+          router.push('/login')
+          return
+        }
+
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('id, name, email, plan')
+          .eq('id', authUser.id)
+          .single()
+
+        if (profile) {
+          setUser(profile)
+        } else {
+          setUser({
+            id: authUser.id,
+            name: authUser.email?.split('@')[0] || 'User',
+            email: authUser.email || '',
+            plan: 'free'
+          })
+        }
+      } catch (err) {
+        console.error('Auth error:', err)
+        router.push('/login')
+      } finally {
+        setAuthChecked(true)
       }
     }
     getUser()
-  }, [])
+  }, [router])
 
   const handleLogout = async () => {
     const supabase = createClient()
@@ -38,9 +63,30 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     router.refresh()
   }
 
+  // Show loading while checking auth
+  if (!authChecked) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: '#fcfcfc',
+      }}>
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+          style={{ fontSize: 32 }}
+        >
+          🌸
+        </motion.div>
+      </div>
+    )
+  }
+
   return (
     <div style={{ background: '#fcfcfc', minHeight: '100vh' }}>
-      {/* Desktop Sidebar Container */}
+      {/* Desktop Sidebar */}
       <div className="desktop-only" style={{ 
         width: 240, 
         position: 'fixed', 
@@ -58,7 +104,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         flexDirection: 'column', 
         minHeight: '100vh' 
       }}>
-        {/* Header */}
         <Header 
           user={user} 
           onMenuClick={() => setSidebarOpen(true)} 
@@ -69,7 +114,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           setProfileOpen={setProfileOpen} 
         />
 
-        {/* Dynamic Content */}
         <main 
           style={{ flex: 1, padding: '32px' }} 
           onClick={() => { setNotifOpen(false); setProfileOpen(false) }}
@@ -112,7 +156,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   display: 'flex', 
                   alignItems: 'center', 
                   justifyContent: 'center', 
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)' 
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                  cursor: 'pointer'
                 }}
               >
                 <X size={18} />

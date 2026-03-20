@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Music, Volume2, VolumeX } from 'lucide-react'
+import ReactPlayer from 'react-player'
 
 interface MusicPlayerProps {
   url: string
@@ -10,35 +11,41 @@ interface MusicPlayerProps {
 
 export function MusicPlayer({ url }: MusicPlayerProps) {
   const [playing, setPlaying] = useState(false)
-  const audioRef = useRef<HTMLAudioElement>(null)
+  const [hasMounted, setHasMounted] = useState(false)
 
   useEffect(() => {
-    // Autoplay when component mounts (which is after OpeningScreen is closed)
-    if (audioRef.current) {
-      audioRef.current.play().then(() => {
-        setPlaying(true)
-      }).catch(err => {
-        console.log('Autoplay blocked or failed:', err)
-      })
-    }
+    setHasMounted(true)
+    setPlaying(true)
   }, [url])
 
   const toggle = () => {
-    if (!audioRef.current) return
-    if (playing) {
-      audioRef.current.pause()
-      setPlaying(false)
-    } else {
-      audioRef.current.play().catch(() => {})
-      setPlaying(true)
-    }
+    setPlaying(!playing)
   }
 
-  if (!url) return null
+  if (!url || !hasMounted) return null
+
+  // Loose check for YouTube, fallback to native audio for direct links
+  const isYoutube = url.includes('youtube.com') || url.includes('youtu.be')
 
   return (
     <div style={{ position: 'fixed', bottom: 24, left: 24, zIndex: 100 }}>
-      <audio ref={audioRef} src={url} loop />
+      {/* Hidden Player */}
+      <div style={{ display: 'none' }}>
+        {isYoutube ? (
+          <ReactPlayer 
+            url={url} 
+            playing={playing} 
+            loop={true} 
+            volume={1} 
+            width="0" 
+            height="0" 
+            // @ts-ignore
+            config={{ youtube: { playerVars: { autoplay: 1 } } }}
+          />
+        ) : (
+          <audio src={url} loop autoPlay={playing} muted={!playing} />
+        )}
+      </div>
       
       <motion.button
         initial={{ scale: 0, rotate: -180 }}
