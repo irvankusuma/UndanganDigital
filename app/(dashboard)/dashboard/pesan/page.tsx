@@ -6,6 +6,8 @@ import { Download, Eye, EyeOff } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 import { createClient } from '@/lib/supabase/client'
+import { InvitationSwitcher } from '@/components/dashboard/InvitationSwitcher'
+import { useSelectedInvitation } from '@/components/dashboard/useSelectedInvitation'
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
   visible: { label: 'Ditampilkan', color: '#10B981', bg: '#ECFDF5' },
@@ -14,39 +16,25 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }
 }
 
 const TABS = ['Semua Pesan', 'Menunggu Moderasi', 'Disembunyikan']
+const PAGE_SIZE = 10
 
 export default function PesanPage() {
   const [wishes, setWishes] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('Semua Pesan')
+  const [page, setPage] = useState(1)
+  const { invitations, selectedInvId, selectInvitation, loading: invLoading } = useSelectedInvitation()
 
-  // Fetch real wishes
   useEffect(() => {
+    if (!selectedInvId) { if (!invLoading) { setWishes([]); setLoading(false) } return }
     const fetchWishes = async () => {
+      setLoading(true)
       try {
         const supabase = createClient()
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) return
-
-        // Ambil undangan pertama milik user
-        const { data: invs } = await supabase.from('invitations')
-          .select('id')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(1)
-
-        if (!invs || invs.length === 0) {
-          setLoading(false)
-          return
-        }
-
-        const invId = invs[0].id
-
         const { data: wishesData } = await supabase.from('wishes')
           .select('*')
-          .eq('invitation_id', invId)
+          .eq('invitation_id', selectedInvId)
           .order('created_at', { ascending: false })
-
         setWishes(wishesData || [])
       } catch (err) {
         console.error(err)
@@ -55,11 +43,41 @@ export default function PesanPage() {
       }
     }
     fetchWishes()
-  }, [])
+  }, [selectedInvId, invLoading])
 
   const filtered = activeTab === 'Semua Pesan' ? wishes
     : activeTab === 'Menunggu Moderasi' ? wishes.filter(w => w.status === 'pending')
     : wishes.filter(w => w.status === 'hidden')
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
+  const currentPage = Math.min(page, totalPages)
+  const paged = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
+
+  useEffect(() => { setPage(1) }, [activeTab, selectedInvId])
+
+  const handleExport = () => {
+    if (filtered.length === 0) { toast.error('Tidak ada data untuk diekspor'); return }
+    const header = ['Nama Tamu', 'Pesan', 'Status', 'Waktu']
+    const rows = filtered.map(w => [
+      w.guest_name,
+      w.message,
+      STATUS_CONFIG[w.status]?.label || w.status,
+      new Date(w.created_at).toLocaleString('id-ID'),
+    ])
+    const csv = [header, ...rows]
+      .map(cols => cols.map(c => `"${String(c ?? '').replace(/"/g, '""')}"`).join(','))
+      .join('\n')
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `pesan-undangan-${new Date().toISOString().slice(0, 10)}.csv`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+    toast.success('Data berhasil diekspor')
+  }
 
   const toggleStatus = async (id: string) => {
     const wish = wishes.find(w => w.id === id)
@@ -94,7 +112,7 @@ export default function PesanPage() {
           <p style={{ fontSize: 14, color: '#888' }}>Moderasi dan kelola ucapan dari para tamu undangan Anda.</p>
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
-          <button style={{
+          <button onClick={handleExport} style={{
             display: 'inline-flex', alignItems: 'center', gap: 8,
             border: '1.5px solid #f0f0f0', borderRadius: 100, padding: '10px 20px',
             fontSize: 13, fontWeight: 600, color: '#666', cursor: 'pointer', background: 'white',
@@ -102,6 +120,10 @@ export default function PesanPage() {
             <Download size={15} /> Ekspor Data
           </button>
         </div>
+      </div>
+
+      <div style={{ marginBottom: 20 }}>
+        <InvitationSwitcher invitations={invitations} selectedInvId={selectedInvId} onChange={selectInvitation} />
       </div>
 
       {/* Tabs */}
@@ -130,7 +152,8 @@ export default function PesanPage() {
 
       {/* Messages Table */}
       <div style={{ background: 'white', borderRadius: 16, boxShadow: '0 4px 20px rgba(0,0,0,0.05)', border: '1.5px solid #f0f0f0', overflow: 'hidden', marginTop: 24 }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 640 }}>
           <thead>
             <tr style={{ background: '#FAFAFA', borderBottom: '1.5px solid #f5f5f5' }}>
               {['TAMU', 'PESAN', 'WAKTU', 'STATUS', 'AKSI'].map(h => (
@@ -146,7 +169,7 @@ export default function PesanPage() {
                 </td>
               </tr>
             )}
-            {filtered.map((wish, i) => {
+            {paged.map((wish, i) => {
               const statusConf = STATUS_CONFIG[wish.status] || STATUS_CONFIG.pending
               return (
                 <motion.tr key={wish.id}
@@ -200,12 +223,15 @@ export default function PesanPage() {
             })}
           </tbody>
         </table>
+        </div>
 
-        <div style={{ padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #f5f5f5' }}>
-          <span style={{ fontSize: 12, color: '#aaa' }}>Menampilkan {filtered.length} dari {wishes.length} pesan</span>
+        <div style={{ padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #f5f5f5', flexWrap: 'wrap', gap: 12 }}>
+          <span style={{ fontSize: 12, color: '#aaa' }}>
+            Menampilkan {filtered.length === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1}–{Math.min(currentPage * PAGE_SIZE, filtered.length)} dari {filtered.length} pesan
+          </span>
           <div style={{ display: 'flex', gap: 8 }}>
-            <button style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid #f0f0f0', background: 'white', fontWeight: 600, fontSize: 12, cursor: 'pointer' }}>Sebelumnya</button>
-            <button style={{ padding: '8px 16px', borderRadius: 8, background: '#E8627A', border: 'none', color: 'white', fontWeight: 600, fontSize: 12, cursor: 'pointer' }}>Selanjutnya</button>
+            <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid #f0f0f0', background: 'white', fontWeight: 600, fontSize: 12, cursor: currentPage === 1 ? 'not-allowed' : 'pointer', color: currentPage === 1 ? '#ccc' : '#666' }}>Sebelumnya</button>
+            <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} style={{ padding: '8px 16px', borderRadius: 8, background: currentPage === totalPages ? '#f0f0f0' : '#E8627A', border: 'none', color: currentPage === totalPages ? '#aaa' : 'white', fontWeight: 600, fontSize: 12, cursor: currentPage === totalPages ? 'not-allowed' : 'pointer' }}>Selanjutnya</button>
           </div>
         </div>
       </div>

@@ -11,22 +11,31 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }
   active: { label: 'AKTIF', color: '#10B981', bg: '#ECFDF5' },
   draft: { label: 'DRAFT', color: '#F59E0B', bg: '#FFFBEB' },
   completed: { label: 'SELESAI', color: '#6366F1', bg: '#EEF2FF' },
+  archived: { label: 'ARSIP', color: '#64748B', bg: '#F1F5F9' },
 }
 
-const TABS = ['Semua', 'Aktif', 'Draft', 'Selesai']
+const TABS = ['Semua', 'Aktif', 'Draft', 'Selesai', 'Arsip']
+const PAGE_SIZE = 6
 
 export default function UndanganPage() {
   const [activeTab, setActiveTab] = useState('Semua')
   const [invitations, setInvitations] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [origin, setOrigin] = useState('')
+  const [page, setPage] = useState(1)
 
   useEffect(() => {
+    setOrigin(window.location.origin.replace(/^https?:\/\//, ''))
     const load = async () => {
       setLoading(true)
       try {
         const supabase = createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) { setLoading(false); return }
+
         const { data, error } = await supabase.from('invitations')
           .select('*')
+          .eq('user_id', user.id)
           .order('created_at', { ascending: false })
         
         if (error) throw error
@@ -46,8 +55,15 @@ export default function UndanganPage() {
         if (activeTab === 'Aktif') return inv.status === 'active'
         if (activeTab === 'Draft') return inv.status === 'draft'
         if (activeTab === 'Selesai') return inv.status === 'completed'
+        if (activeTab === 'Arsip') return inv.status === 'archived'
         return true
       })
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
+  const currentPage = Math.min(page, totalPages)
+  const paged = filtered.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
+
+  useEffect(() => { setPage(1) }, [activeTab])
 
   const handleCopyLink = (slug: string) => {
     const url = `${window.location.origin}/undangan/${slug}`
@@ -119,7 +135,7 @@ export default function UndanganPage() {
 
       {/* Grid */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 20 }}>
-        {filtered.map((inv, i) => {
+        {paged.map((inv, i) => {
           const statusConf = STATUS_CONFIG[inv.status] || STATUS_CONFIG.draft
           return (
             <motion.div
@@ -158,7 +174,7 @@ export default function UndanganPage() {
                 background: '#FAFAFA', borderRadius: 8, padding: '8px 12px', marginBottom: 20,
               }}>
                 <span style={{ fontSize: 12, color: '#888', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  eternalinvite.com/{inv.slug}
+                  {origin || '...'}/{inv.slug}
                 </span>
                 <button onClick={() => handleCopyLink(inv.slug)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#E8627A', padding: '0 0 0 8px' }}>
                   <Copy size={14} />
@@ -214,7 +230,7 @@ export default function UndanganPage() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: filtered.length * 0.06 }}
+            transition={{ delay: paged.length * 0.06 }}
             whileHover={{ scale: 1.02 }}
             style={{
               background: 'white', borderRadius: 18, padding: 24,
@@ -239,17 +255,35 @@ export default function UndanganPage() {
       </div>
 
       {/* Pagination */}
-      {invitations.length > 6 && (
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 24 }}>
-          <span style={{ fontSize: 12, color: '#aaa' }}>Menampilkan {filtered.length} dari {invitations.length} undangan</span>
+      {filtered.length > PAGE_SIZE && (
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 24, flexWrap: 'wrap', gap: 12 }}>
+          <span style={{ fontSize: 12, color: '#aaa' }}>
+            Menampilkan {(currentPage - 1) * PAGE_SIZE + 1}–{Math.min(currentPage * PAGE_SIZE, filtered.length)} dari {filtered.length} undangan
+          </span>
           <div style={{ display: 'flex', gap: 8 }}>
-            {[1, 2, 3].map(n => (
-              <button key={n} style={{
-                width: 34, height: 34, borderRadius: 8, border: n === 1 ? 'none' : '1px solid #f0f0f0',
-                background: n === 1 ? '#E8627A' : 'white', color: n === 1 ? 'white' : '#666',
+            <button
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              style={{
+                height: 34, padding: '0 12px', borderRadius: 8, border: '1px solid #f0f0f0',
+                background: 'white', color: currentPage === 1 ? '#ccc' : '#666',
+                fontWeight: 700, fontSize: 13, cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+              }}>←</button>
+            {Array.from({ length: totalPages }, (_, idx) => idx + 1).map(n => (
+              <button key={n} onClick={() => setPage(n)} style={{
+                width: 34, height: 34, borderRadius: 8, border: n === currentPage ? 'none' : '1px solid #f0f0f0',
+                background: n === currentPage ? '#E8627A' : 'white', color: n === currentPage ? 'white' : '#666',
                 fontWeight: 700, fontSize: 13, cursor: 'pointer',
               }}>{n}</button>
             ))}
+            <button
+              onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              style={{
+                height: 34, padding: '0 12px', borderRadius: 8, border: '1px solid #f0f0f0',
+                background: 'white', color: currentPage === totalPages ? '#ccc' : '#666',
+                fontWeight: 700, fontSize: 13, cursor: currentPage === totalPages ? 'not-allowed' : 'pointer',
+              }}>→</button>
           </div>
         </div>
       )}

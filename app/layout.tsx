@@ -4,18 +4,18 @@ import { Toaster } from 'react-hot-toast'
 
 export const metadata: Metadata = {
   title: {
-    default: 'Undangan Pernikahan Ahmad & Siti',
-    template: '%s | Ahmad & Siti',
+    default: 'EternalInvite — Platform Undangan Pernikahan Digital',
+    template: '%s | EternalInvite',
   },
-  description: 'Kami mengundang Anda untuk merayakan hari istimewa kami. Bergabunglah dalam pernikahan Ahmad & Siti.',
-  keywords: ['undangan digital', 'undangan pernikahan', 'undangan online', 'wedding invitation', 'digital invitation'],
+  description: 'Buat undangan pernikahan digital yang elegan dalam hitungan menit. RSVP otomatis, buku tamu, galeri foto, musik latar, dan link personal per tamu — semua dalam satu platform.',
+  keywords: ['undangan digital', 'undangan pernikahan', 'undangan online', 'wedding invitation', 'digital invitation', 'undangan pernikahan digital'],
   openGraph: {
     type: 'website',
     locale: 'id_ID',
     url: 'https://eternalinvite.com',
     siteName: 'EternalInvite',
-    title: 'Undangan Pernikahan Ahmad & Siti',
-    description: 'Kami mengundang Anda untuk merayakan hari istimewa kami. Bergabunglah dalam pernikahan Ahmad & Siti.',
+    title: 'EternalInvite — Platform Undangan Pernikahan Digital',
+    description: 'Buat undangan pernikahan digital yang elegan dalam hitungan menit. RSVP, buku tamu, galeri foto, dan musik latar dalam satu platform.',
   },
 }
 

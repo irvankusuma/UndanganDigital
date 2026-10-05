@@ -28,7 +28,8 @@ interface TamuTableProps {
 export function TamuTable({ guests, loading, onEdit, onDelete, onAdd }: TamuTableProps) {
   return (
     <div style={{ background: 'white', borderRadius: 16, boxShadow: '0 4px 20px rgba(0,0,0,0.05)', border: '1.5px solid #f0f0f0', overflow: 'hidden' }}>
-      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+      <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 640 }}>
         <thead>
           <tr style={{ borderBottom: '1.5px solid #f5f5f5', background: '#FAFAFA' }}>
             {['NAMA TAMU', 'KATEGORI', 'JUMLAH', 'STATUS HADIR', 'AKSI'].map(h => (
@@ -108,19 +109,11 @@ export function TamuTable({ guests, loading, onEdit, onDelete, onAdd }: TamuTabl
           })}
         </tbody>
       </table>
+      </div>
 
-      {/* Pagination Placeholder */}
-      <div style={{ padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #f5f5f5' }}>
+      {/* Footer */}
+      <div style={{ padding: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #f5f5f5', flexWrap: 'wrap', gap: 8 }}>
         <span style={{ fontSize: 12, color: '#aaa' }}>Menampilkan {guests.length} tamu</span>
-        <div style={{ display: 'flex', gap: 6 }}>
-          {['<', 1, 2, 3, '>'].map((n, i) => (
-            <button key={i} style={{
-              width: 32, height: 32, borderRadius: 8, border: n === 1 ? 'none' : '1px solid #f0f0f0',
-              background: n === 1 ? '#E8627A' : 'white', color: n === 1 ? 'white' : '#666',
-              fontSize: 12, fontWeight: 700, cursor: 'pointer',
-            }}>{n}</button>
-          ))}
-        </div>
       </div>
     </div>
   )

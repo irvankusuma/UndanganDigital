@@ -21,17 +21,23 @@ const FONTS_BODY = ['Poppins', 'Montserrat', 'Lato', 'Nunito']
 const SECTIONS = ['Informasi Acara', 'Tema & Warna', 'Galeri Foto', 'Musik', 'Fitur', 'Pratinjau']
 
 import { createClient } from '@/lib/supabase/client'
+import { InvitationSwitcher } from '@/components/dashboard/InvitationSwitcher'
+import { useSelectedInvitation } from '@/components/dashboard/useSelectedInvitation'
 
 export default function KustomisasiPage() {
   const [activeSection, setActiveSection] = useState('Informasi Acara')
   const [loading, setLoading] = useState(true)
-  const [currentInvId, setCurrentInvId] = useState<string | null>(null)
+  const { invitations, selectedInvId, selectInvitation, loading: invLoading } = useSelectedInvitation()
+  const currentInvId = selectedInvId
+  const [invSlug, setInvSlug] = useState('')
+  const [coupleLabel, setCoupleLabel] = useState('')
   
   const [selectedTheme, setSelectedTheme] = useState('elegant')
   const [selectedColor, setSelectedColor] = useState('#E8627A')
   const [fontTitle, setFontTitle] = useState('Playfair Display')
   const [fontBody, setFontBody] = useState('Poppins')
   const [musicEnabled, setMusicEnabled] = useState(false)
+  const [musicUrl, setMusicUrl] = useState('')
   
   const [features, setFeatures] = useState({
     rsvp: true, guestbook: true, gallery: true, gift: false, music: false, countdown: true,
@@ -48,29 +54,27 @@ export default function KustomisasiPage() {
     greeting: '',
   })
   const [saving, setSaving] = useState(false)
+  const [resetKey, setResetKey] = useState(0)
   const theme = THEMES.find(t => t.id === selectedTheme) || THEMES[0]
 
   // Fetch real data
   useEffect(() => {
+    if (!selectedInvId) { if (!invLoading) setLoading(false); return }
     const fetchInv = async () => {
+      setLoading(true)
       try {
         const supabase = createClient()
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) return
-
-        const { data: invs } = await supabase.from('invitations')
+        const { data: inv } = await supabase.from('invitations')
           .select('*')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
-          .limit(1)
+          .eq('id', selectedInvId)
+          .single()
 
-        if (!invs || invs.length === 0) {
-          setLoading(false)
-          return
-        }
+        if (!inv) { setLoading(false); return }
 
-        const inv = invs[0]
-        setCurrentInvId(inv.id)
+        setInvSlug(inv.slug || '')
+        const bride = (inv.bride_name || '').split(' ')[0]
+        const groom = (inv.groom_name || '').split(' ')[0]
+        setCoupleLabel(bride && groom ? `${groom} & ${bride}` : (inv.event_name || 'Anda & Pasangan'))
         
         // Populate state
         setSelectedTheme(inv.theme || 'elegant')
@@ -89,6 +93,8 @@ export default function KustomisasiPage() {
         
         if (inv.gallery_images && Array.isArray(inv.gallery_images)) {
           setGallery(inv.gallery_images)
+        } else {
+          setGallery([])
         }
         
         setFeatures({
@@ -101,6 +107,7 @@ export default function KustomisasiPage() {
         })
         
         setMusicEnabled(inv.enable_music ?? false)
+        setMusicUrl(inv.music_url || '')
 
       } catch (err) {
         console.error(err)
@@ -109,7 +116,7 @@ export default function KustomisasiPage() {
       }
     }
     fetchInv()
-  }, [])
+  }, [selectedInvId, invLoading, resetKey])
 
   const handleSave = async () => {
     if (!currentInvId) {
@@ -137,6 +144,7 @@ export default function KustomisasiPage() {
         enable_gallery: features.gallery,
         enable_gifts: features.gift,
         enable_music: musicEnabled,
+        music_url: musicEnabled ? (musicUrl || null) : null,
         enable_countdown: features.countdown,
       }
       
@@ -169,7 +177,7 @@ export default function KustomisasiPage() {
         const filePath = `gallery/${fileName}`
 
         const { error: uploadError, data } = await supabase.storage
-          .from('invitations')
+          .from('gallery')
           .upload(filePath, file, {
             cacheControl: '3600',
             upsert: true
@@ -178,7 +186,7 @@ export default function KustomisasiPage() {
         if (uploadError) throw uploadError
 
         const { data: { publicUrl } } = supabase.storage
-          .from('invitations')
+          .from('gallery')
           .getPublicUrl(filePath)
 
         setGallery(prev => [...prev, publicUrl])
@@ -186,7 +194,7 @@ export default function KustomisasiPage() {
       toast.success('Foto berhasil diunggah! 📸')
     } catch (err) {
       console.error('Upload error:', err)
-      toast.error('Gagal mengunggah foto. Pastikan bucket "invitations" sudah ada.')
+      toast.error('Gagal mengunggah foto.')
     } finally {
       setUploading(false)
       // Reset input
@@ -203,7 +211,7 @@ export default function KustomisasiPage() {
           <p style={{ fontSize: 14, color: '#888' }}>Atur detail informasi, tema, dan galeri foto pernikahan Anda untuk undangan digital yang sempurna.</p>
         </div>
         <div style={{ display: 'flex', gap: 12 }}>
-          <button style={{
+          <button onClick={() => setActiveSection('Pratinjau')} style={{
             display: 'inline-flex', alignItems: 'center', gap: 8,
             border: '1.5px solid #f0f0f0', borderRadius: 100, padding: '10px 20px',
             fontSize: 13, fontWeight: 600, color: '#666', cursor: 'pointer', background: 'white',
@@ -214,6 +222,10 @@ export default function KustomisasiPage() {
             <Save size={15} /> {saving ? 'Menyimpan...' : 'Simpan Perubahan'}
           </button>
         </div>
+      </div>
+
+      <div style={{ marginBottom: 20 }}>
+        <InvitationSwitcher invitations={invitations} selectedInvId={selectedInvId} onChange={selectInvitation} />
       </div>
 
       {/* Section Tabs */}
@@ -249,7 +261,7 @@ export default function KustomisasiPage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24, color: '#E8627A', fontWeight: 700, fontSize: 15 }}>
               <Info size={18} /> Informasi Acara
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 240px), 1fr))', gap: 20 }}>
               <div>
                 <label style={{ fontSize: 13, fontWeight: 600, color: '#444', display: 'block', marginBottom: 8 }}>Tanggal Pernikahan</label>
                 <input type="date" value={eventInfo.date} onChange={e => setEventInfo(p => ({ ...p, date: e.target.value }))} className="input-elegant" />
@@ -351,7 +363,7 @@ export default function KustomisasiPage() {
             </div>
 
             {/* Font Selection */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 28 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 240px), 1fr))', gap: 20, marginBottom: 28 }}>
               <div>
                 <label style={{ fontSize: 13, fontWeight: 600, color: '#444', display: 'block', marginBottom: 8 }}>Pilih Font Judul</label>
                 <select value={fontTitle} onChange={e => setFontTitle(e.target.value)} className="input-elegant">
@@ -359,7 +371,7 @@ export default function KustomisasiPage() {
                 </select>
                 <div style={{ marginTop: 12, padding: '12px 16px', background: '#FDF8F0', borderRadius: 10, textAlign: 'center' }}>
                   <p style={{ fontFamily: `${fontTitle}, serif`, fontSize: 20, color: selectedColor, margin: 0 }}>
-                    The Wedding of Andi & Sarah
+                    The Wedding of {coupleLabel || 'Anda & Pasangan'}
                   </p>
                   <p style={{ fontSize: 10, color: '#aaa', marginTop: 4 }}>PREVIEW FONT JUDUL</p>
                 </div>
@@ -479,7 +491,7 @@ export default function KustomisasiPage() {
               <>
                 <div style={{ marginBottom: 20 }}>
                   <label style={{ fontSize: 13, fontWeight: 600, color: '#444', display: 'block', marginBottom: 8 }}>URL Musik</label>
-                  <input className="input-elegant" placeholder="https://example.com/music.mp3 atau URL YouTube" />
+                  <input className="input-elegant" value={musicUrl} onChange={e => setMusicUrl(e.target.value)} placeholder="https://example.com/music.mp3 atau URL YouTube" />
                   <p style={{ fontSize: 12, color: '#aaa', marginTop: 6 }}>Mendukung format MP3, OGG, dan WAV. Atau tempel URL YouTube untuk streaming.</p>
                 </div>
                 <div style={{ padding: 20, background: '#FDF8F0', borderRadius: 12, display: 'flex', alignItems: 'center', gap: 16 }}>
@@ -487,7 +499,7 @@ export default function KustomisasiPage() {
                     <Music size={18} color="white" />
                   </div>
                   <div>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: '#1a1a1a' }}>♫ Wedding Song</div>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: '#1a1a1a' }}>{musicUrl ? '♫ Musik Kustom' : '♫ Belum ada URL'}</div>
                     <div style={{ fontSize: 12, color: '#888' }}>Musik akan otomatis terputar saat undangan dibuka (setelah interaksi pengguna)</div>
                   </div>
                 </div>
@@ -549,7 +561,7 @@ export default function KustomisasiPage() {
           <div style={{ background: 'white', borderRadius: 16, padding: 28, boxShadow: '0 4px 20px rgba(0,0,0,0.05)', border: '1.5px solid #f0f0f0', marginBottom: 20 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
               <h3 style={{ fontSize: 16, fontWeight: 700, color: '#1a1a1a' }}>Pratinjau Undangan</h3>
-              <a href="/undangan/andi-sarah" target="_blank" style={{ fontSize: 13, color: '#E8627A', textDecoration: 'none', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+              <a href={invSlug ? `/undangan/${invSlug}` : '#'} target="_blank" rel="noopener" style={{ fontSize: 13, color: '#E8627A', textDecoration: 'none', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 6, opacity: invSlug ? 1 : 0.4, pointerEvents: invSlug ? 'auto' : 'none' }}>
                 <Eye size={14} /> Buka Full Preview
               </a>
             </div>
@@ -558,12 +570,12 @@ export default function KustomisasiPage() {
               <div style={{ width: 280, height: 520, borderRadius: 36, border: '8px solid #1a1a1a', overflow: 'hidden', boxShadow: '0 24px 64px rgba(0,0,0,0.2)', position: 'relative' }}>
                 <div style={{ position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)', width: 80, height: 22, background: '#1a1a1a', borderRadius: '0 0 14px 14px', zIndex: 10 }} />
                 <div style={{ height: '100%', background: theme.bg, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '44px 20px 20px', overflow: 'hidden' }}>
-                  <div style={{ fontSize: 28, marginBottom: 6 }}>🌸</div>
+                  <div style={{ fontSize: 28, marginBottom: 6 }}>{theme.emoji}</div>
                   <p style={{ fontSize: 8, letterSpacing: 3, color: theme.color, textTransform: 'uppercase', fontWeight: 600, marginBottom: 6 }}>THE WEDDING OF</p>
-                  <h2 style={{ fontFamily: `${fontTitle}, serif`, fontSize: 22, fontWeight: 700, color: '#1a1a1a', textAlign: 'center', marginBottom: 4 }}>Andi & Sarah</h2>
+                  <h2 style={{ fontFamily: `${fontTitle}, serif`, fontSize: 22, fontWeight: 700, color: '#1a1a1a', textAlign: 'center', marginBottom: 4 }}>{coupleLabel}</h2>
                   <div style={{ width: 40, height: 1.5, background: theme.color, margin: '8px 0' }} />
-                  <p style={{ fontSize: 9, color: '#888', marginBottom: 4 }}>Sabtu, 25 Desember 2024</p>
-                  <p style={{ fontSize: 8, color: '#aaa', textAlign: 'center', marginBottom: 12 }}>The Ritz-Carlton, Mega Kuningan</p>
+                  <p style={{ fontSize: 9, color: '#888', marginBottom: 4 }}>{eventInfo.date ? new Date(eventInfo.date).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : 'Tanggal belum ditentukan'}</p>
+                  <p style={{ fontSize: 8, color: '#aaa', textAlign: 'center', marginBottom: 12 }}>{eventInfo.location || 'Lokasi belum ditentukan'}</p>
                   {/* Countdown mini */}
                   <div style={{ background: 'white', borderRadius: 10, padding: '8px 16px', display: 'flex', gap: 12, marginBottom: 12, boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}>
                     {[['42', 'Hari'], ['08', 'Jam'], ['24', 'Mnt']].map(([n, l]) => (
@@ -586,7 +598,7 @@ export default function KustomisasiPage() {
       {/* Save Bar */}
       {!loading && currentInvId && (
         <div style={{ position: 'sticky', bottom: 24, display: 'flex', justifyContent: 'flex-end', gap: 12, marginTop: 40 }}>
-          <button style={{ padding: '12px 24px', borderRadius: 100, border: '1.5px solid #f0f0f0', background: 'white', cursor: 'pointer', fontWeight: 600, color: '#666', fontSize: 14 }}>Batalkan</button>
+          <button onClick={() => { setResetKey(k => k + 1); toast('Perubahan dibatalkan') }} style={{ padding: '12px 24px', borderRadius: 100, border: '1.5px solid #f0f0f0', background: 'white', cursor: 'pointer', fontWeight: 600, color: '#666', fontSize: 14 }}>Batalkan</button>
           <button onClick={handleSave} className="btn-primary" disabled={saving} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 14, padding: '12px 28px', opacity: saving ? 0.7 : 1 }}>
             <Save size={15} /> {saving ? 'Menyimpan...' : 'Simpan Semua Pengaturan'}
           </button>

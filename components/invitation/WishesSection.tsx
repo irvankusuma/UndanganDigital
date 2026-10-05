@@ -1,16 +1,37 @@
 'use client'
 
+import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { Send, MessageSquareHeart } from 'lucide-react'
+import { Send, MessageSquareHeart, Loader } from 'lucide-react'
 import { Wish } from '@/types'
 
 interface WishesSectionProps {
   wishes: Wish[]
   colorHex: string
   tFont: string
+  onSubmitWish?: (name: string, message: string) => Promise<boolean>
 }
 
-export function WishesSection({ wishes, colorHex, tFont }: WishesSectionProps) {
+export function WishesSection({ wishes, colorHex, tFont, onSubmitWish }: WishesSectionProps) {
+  const [name, setName] = useState('')
+  const [message, setMessage] = useState('')
+  const [sending, setSending] = useState(false)
+  const [sent, setSent] = useState(false)
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!onSubmitWish || sending) return
+    setSending(true)
+    const ok = await onSubmitWish(name, message)
+    setSending(false)
+    if (ok) {
+      setName('')
+      setMessage('')
+      setSent(true)
+      setTimeout(() => setSent(false), 5000)
+    }
+  }
+
   return (
     <section style={{ padding: '100px 24px', background: '#fefefe' }}>
       <div style={{ maxWidth: 800, margin: '0 auto' }}>
@@ -28,6 +49,62 @@ export function WishesSection({ wishes, colorHex, tFont }: WishesSectionProps) {
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 40 }}>
+          {/* Form Ucapan */}
+          {onSubmitWish && (
+            <motion.form
+              onSubmit={handleSubmit}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              style={{
+                background: 'white', padding: 28, borderRadius: 24,
+                border: '1px solid #f0f0f0', boxShadow: '0 4px 20px rgba(0,0,0,0.03)',
+                display: 'flex', flexDirection: 'column', gap: 16,
+              }}
+            >
+              <h3 style={{ fontFamily: tFont, fontSize: 20, fontWeight: 700, color: '#1a1a1a', margin: 0 }}>Tulis Ucapan & Doa</h3>
+              <input
+                value={name}
+                onChange={e => setName(e.target.value)}
+                placeholder="Nama Anda"
+                className="input-wish"
+                required
+                maxLength={80}
+              />
+              <textarea
+                value={message}
+                onChange={e => setMessage(e.target.value)}
+                placeholder="Tuliskan ucapan & doa terbaik untuk kedua mempelai..."
+                className="input-wish"
+                rows={4}
+                style={{ resize: 'none' }}
+                required
+                maxLength={500}
+              />
+              <button
+                type="submit"
+                disabled={sending}
+                className="btn-wish"
+                style={{
+                  background: `linear-gradient(135deg, ${colorHex}, ${colorHex}dd)`,
+                  color: 'white', fontWeight: 700,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+                  opacity: sending ? 0.7 : 1, cursor: sending ? 'not-allowed' : 'pointer',
+                }}
+              >
+                {sending ? <><Loader size={18} className="animate-spin" /> Mengirim...</> : <>Kirim Ucapan <Send size={18} /></>}
+              </button>
+              {sent && (
+                <p style={{ fontSize: 13, color: '#10B981', fontWeight: 600, margin: 0, textAlign: 'center' }}>
+                  Terima kasih! Ucapan Anda terkirim dan sedang menunggu moderasi.
+                </p>
+              )}
+              <p style={{ fontSize: 12, color: '#aaa', margin: 0, textAlign: 'center' }}>
+                Ucapan akan tampil setelah disetujui oleh pemilik undangan.
+              </p>
+            </motion.form>
+          )}
+
           {/* Wishes List */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20, maxHeight: 600, overflowY: 'auto', paddingRight: 10 }} className="custom-scrollbar">
             {wishes.map((w, i) => (
@@ -53,7 +130,7 @@ export function WishesSection({ wishes, colorHex, tFont }: WishesSectionProps) {
                       color: colorHex, display: 'flex', alignItems: 'center', justifyContent: 'center',
                       fontWeight: 700, fontSize: 16
                     }}>
-                      {w.guest_name.charAt(0).toUpperCase()}
+                      {w.guest_name?.charAt(0)?.toUpperCase() || '?'}
                     </div>
                     <div>
                       <h4 style={{ fontWeight: 700, fontSize: 15, color: '#1a1a1a', margin: 0 }}>{w.guest_name}</h4>

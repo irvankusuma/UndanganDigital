@@ -7,14 +7,12 @@ import { supabaseBrowserEnv } from '@/lib/supabase/config'
 export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname
 
-  if (pathname === '/') {
-    return NextResponse.redirect(new URL('/login', request.url))
-  }
-
   const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET })
   const isAuthAdmin = !!token
 
-  if (pathname.startsWith('/admin/dashboard') && !isAuthAdmin) {
+  const isAdminArea = pathname.startsWith('/admin') && pathname !== '/admin/login'
+
+  if (isAdminArea && !isAuthAdmin) {
     return NextResponse.redirect(new URL('/admin/login', request.url))
   }
 
@@ -90,6 +88,5 @@ export const config = {
     '/register',
     '/forgot-password',
     '/reset-password',
-    '/',
   ],
 }

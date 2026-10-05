@@ -115,7 +115,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         />
 
         <main 
-          style={{ flex: 1, padding: '32px' }} 
+          className="main-content"
           onClick={() => { setNotifOpen(false); setProfileOpen(false) }}
         >
           <div style={{ maxWidth: '1600px', margin: '0 auto' }}>
@@ -172,11 +172,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         .desktop-only { display: block; }
         .mobile-only { display: none; }
         .main-wrapper { margin-left: 240px; }
+        .main-content { flex: 1; padding: 32px; }
         
         @media (max-width: 1024px) {
           .desktop-only { display: none; }
           .mobile-only { display: block; }
           .main-wrapper { margin-left: 0; }
+        }
+        @media (max-width: 640px) {
+          .main-content { padding: 16px; }
         }
       `}</style>
     </div>

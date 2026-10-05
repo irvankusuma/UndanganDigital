@@ -13,7 +13,6 @@ export default function RegisterPage() {
   const [form, setForm] = useState({ name: '', email: '', password: '', confirm: '' })
   const [showPw, setShowPw] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [step, setStep] = useState<1 | 2>(1)
 
   const strength = form.password.length >= 8 ? (form.password.match(/[A-Z]/) && form.password.match(/[0-9]/) ? 3 : 2) : (form.password.length > 0 ? 1 : 0)
   const strengthLabel = ['', 'Lemah', 'Sedang', 'Kuat'][strength]
@@ -21,45 +20,34 @@ export default function RegisterPage() {
 
   const handleRegister = async (e?: React.FormEvent) => {
     if (e) e.preventDefault()
-    
-    if (step === 1) {
-      if (form.password !== form.confirm) {
-        toast.error('Password tidak cocok!')
-        return
-      }
-      if (form.password.length < 8) {
-        toast.error('Password minimal 8 karakter')
-        return
-      }
-      setStep(2)
+
+    if (form.password !== form.confirm) {
+      toast.error('Password tidak cocok!')
+      return
+    }
+    if (form.password.length < 8) {
+      toast.error('Password minimal 8 karakter')
       return
     }
 
     setLoading(true)
     try {
       const supabase = createClient()
-      const { data, error } = await supabase.auth.signUp({
+      const { error } = await supabase.auth.signUp({
         email: form.email,
         password: form.password,
         options: {
-          data: { name: form.name, plan: 'premium' },
+          data: { name: form.name },
           emailRedirectTo: `${window.location.origin}/dashboard`,
         },
       })
       if (error) throw error
-      
-      // Auto-upgrade simulation attempts:
-      if (data.user) {
-        // Attempt to update profile plan via client (may fail if RLS restricts normal users, but we try)
-        await supabase.from('profiles').update({ plan: 'premium' }).eq('id', data.user.id)
-      }
 
-      toast.success('Pembayaran Simulasi Sukses! Pendaftaran berhasil.')
+      toast.success('Pendaftaran berhasil! Selamat datang di EternalInvite.')
       router.push('/dashboard')
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Terjadi kesalahan'
       toast.error(message.includes('already registered') ? 'Email sudah terdaftar' : message)
-      setStep(1)
     } finally {
       setLoading(false)
     }
@@ -149,8 +137,7 @@ export default function RegisterPage() {
             </div>
           )}
 
-          {step === 1 ? (
-            <form onSubmit={handleRegister}>
+          <form onSubmit={handleRegister}>
               {/* Name */}
               <div style={{ marginBottom: 16 }}>
                 <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#444', marginBottom: 8 }}>Nama Lengkap</label>
@@ -214,37 +201,10 @@ export default function RegisterPage() {
                 )}
               </div>
 
-              <button type="submit" disabled={!isSupabaseConfigured} className="btn-primary" style={{ width: '100%', fontSize: 15, opacity: !isSupabaseConfigured ? 0.7 : 1 }}>
-                Lanjut ke Pembayaran Otomatis
+              <button type="submit" disabled={loading || !isSupabaseConfigured} className="btn-primary" style={{ width: '100%', fontSize: 15, opacity: !isSupabaseConfigured || loading ? 0.7 : 1 }}>
+                {loading ? 'Mendaftarkan...' : 'Daftar Sekarang — Gratis'}
               </button>
-            </form>
-          ) : (
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}>
-              <div style={{ background: 'white', borderRadius: 20, padding: 24, border: '1.5px solid #E8D5B0', textAlign: 'center' }}>
-                <h3 style={{ fontSize: 18, fontWeight: 700, color: '#1a1a1a', marginBottom: 8 }}>Pembayaran Premium Otomatis</h3>
-                <p style={{ fontSize: 13, color: '#666', marginBottom: 20 }}>Scan QRIS di bawah ini untuk mengaktifkan akun Premium Anda (Simulasi)</p>
-                
-                <div style={{ margin: '0 auto 20px', width: 200, height: 200, background: '#f5f5f5', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px dashed #ccc' }}>
-                  <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: 48, marginBottom: 8 }}>📱</div>
-                    <span style={{ fontSize: 12, color: '#888', fontWeight: 600 }}>MOCK QRIS</span>
-                  </div>
-                </div>
-
-                <div style={{ background: '#FDF8F0', padding: 12, borderRadius: 12, marginBottom: 24 }}>
-                  <div style={{ fontSize: 12, color: '#888' }}>Total Tagihan</div>
-                  <div style={{ fontSize: 24, fontWeight: 800, color: '#C9A96E' }}>Rp 49.000</div>
-                </div>
-
-                <button onClick={() => handleRegister()} disabled={loading} className="btn-primary" style={{ width: '100%', fontSize: 15 }}>
-                  {loading ? 'Memproses Langganan...' : 'Saya Sudah Bayar (Simulasi Sukses)'}
-                </button>
-                <button onClick={() => setStep(1)} disabled={loading} style={{ width: '100%', padding: 14, background: 'none', border: 'none', color: '#888', fontSize: 13, fontWeight: 600, marginTop: 8, cursor: 'pointer' }}>
-                  Kembali Edit Data
-                </button>
-              </div>
-            </motion.div>
-          )}
+          </form>
 
           <div style={{ textAlign: 'center', marginTop: 28, fontSize: 14, color: '#888' }}>
             Sudah punya akun?{' '}

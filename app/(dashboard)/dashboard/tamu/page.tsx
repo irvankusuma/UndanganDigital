@@ -8,13 +8,16 @@ import { createClient } from '@/lib/supabase/client'
 import { TamuStats } from '@/components/dashboard/Tamu/TamuStats'
 import { TamuTable } from '@/components/dashboard/Tamu/TamuTable'
 import { TamuModal } from '@/components/dashboard/Tamu/TamuModal'
+import { InvitationSwitcher } from '@/components/dashboard/InvitationSwitcher'
+import { useSelectedInvitation } from '@/components/dashboard/useSelectedInvitation'
 
 const FILTERS = ['Semua', 'Keluarga', 'Teman', 'VIP']
 
 export default function TamuPage() {
   const [guests, setGuests] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [currentInvId, setCurrentInvId] = useState<string | null>(null)
+  const { invitations, selectedInvId, selectInvitation, loading: invLoading } = useSelectedInvitation()
+  const currentInvId = selectedInvId
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('Semua')
   const [showModal, setShowModal] = useState(false)
@@ -22,19 +25,12 @@ export default function TamuPage() {
   const [form, setForm] = useState({ guest_name: '', phone: '', category: 'family', guest_count: 1 })
 
   useEffect(() => {
+    if (!selectedInvId) { if (!invLoading) setLoading(false); return }
     const fetchGuests = async () => {
+      setLoading(true)
       try {
         const supabase = createClient()
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) return
-
-        const { data: invs } = await supabase.from('invitations').select('id').eq('user_id', user.id).order('created_at', { ascending: false }).limit(1)
-        if (!invs || invs.length === 0) { setLoading(false); return }
-
-        const invId = invs[0].id
-        setCurrentInvId(invId)
-
-        const { data: guestsData } = await supabase.from('guests').select('*').eq('invitation_id', invId).order('created_at', { ascending: false })
+        const { data: guestsData } = await supabase.from('guests').select('*').eq('invitation_id', selectedInvId).order('created_at', { ascending: false })
         setGuests(guestsData || [])
       } catch (err) {
         console.error(err)
@@ -43,7 +39,7 @@ export default function TamuPage() {
       }
     }
     fetchGuests()
-  }, [])
+  }, [selectedInvId, invLoading])
 
   const filtered = guests.filter(g => {
     const matchSearch = g.guest_name.toLowerCase().includes(search.toLowerCase())
@@ -115,6 +111,10 @@ export default function TamuPage() {
         <button onClick={openAdd} className="btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
           <Plus size={16} /> Tambah Tamu
         </button>
+      </div>
+
+      <div style={{ marginBottom: 20 }}>
+        <InvitationSwitcher invitations={invitations} selectedInvId={selectedInvId} onChange={selectInvitation} />
       </div>
 
       <TamuStats totalCount={totalCount} rsvpCount={rsvpCount} />

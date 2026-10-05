@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   avatar_url      TEXT,
   plan            TEXT NOT NULL DEFAULT 'free' CHECK (plan IN ('free', 'premium', 'business')),
   plan_expires_at TIMESTAMPTZ,
+  notification_prefs JSONB NOT NULL DEFAULT '{}'::jsonb,
   created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -39,6 +40,14 @@ CREATE TABLE IF NOT EXISTS public.invitations (
   groom_name          TEXT,
   groom_father_name   TEXT,
   groom_mother_name   TEXT,
+  bride_child_order   TEXT,
+  groom_child_order   TEXT,
+  bride_father_is_deceased  BOOLEAN DEFAULT false,
+  bride_mother_is_deceased  BOOLEAN DEFAULT false,
+  groom_father_is_deceased  BOOLEAN DEFAULT false,
+  groom_mother_is_deceased  BOOLEAN DEFAULT false,
+  bride_photo         TEXT,
+  groom_photo         TEXT,
   story               TEXT,
   
   -- Event Details
@@ -218,6 +227,22 @@ CREATE OR REPLACE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
 
+-- 3. Prevent users from upgrading their own plan (only service role may change plan)
+CREATE OR REPLACE FUNCTION public.prevent_plan_self_upgrade()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF (NEW.plan IS DISTINCT FROM OLD.plan OR NEW.plan_expires_at IS DISTINCT FROM OLD.plan_expires_at)
+     AND auth.role() <> 'service_role' THEN
+    RAISE EXCEPTION 'Tidak diizinkan mengubah plan sendiri';
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE TRIGGER profiles_prevent_plan_self_upgrade
+  BEFORE UPDATE ON public.profiles
+  FOR EACH ROW EXECUTE PROCEDURE public.prevent_plan_self_upgrade();
+
 -- ──────────────────────────────────────────────────────────────
 -- ROW LEVEL SECURITY (RLS)
 -- ──────────────────────────────────────────────────────────────
@@ -252,12 +277,10 @@ CREATE POLICY "Public can insert rsvp" ON public.rsvp FOR INSERT WITH CHECK (tru
 CREATE POLICY "Owners can view rsvp" ON public.rsvp FOR SELECT USING (
   EXISTS (SELECT 1 FROM public.invitations WHERE id = invitation_id AND user_id = auth.uid())
 );
-CREATE POLICY "Public can view rsvp by slug" ON public.rsvp FOR SELECT USING (true);
 
 -- 5. Wishes
 CREATE POLICY "Public can insert wishes" ON public.wishes FOR INSERT WITH CHECK (true);
 CREATE POLICY "Public can view visible wishes" ON public.wishes FOR SELECT USING (status = 'visible');
-CREATE POLICY "Public can view pending wishes" ON public.wishes FOR SELECT USING (status = 'pending');
 CREATE POLICY "Owners can manage wishes" ON public.wishes USING (
   EXISTS (SELECT 1 FROM public.invitations WHERE id = invitation_id AND user_id = auth.uid())
 );
@@ -303,7 +326,7 @@ INSERT INTO storage.buckets (id, name, public)
 VALUES 
   ('gallery', 'gallery', true),
   ('avatars', 'avatars', true),
-  ('payment_proofs', 'payment_proofs', true)
+  ('payment_proofs', 'payment_proofs', false)
 ON CONFLICT (id) DO NOTHING;
 
 -- Policies for 'gallery'
@@ -311,7 +334,7 @@ CREATE POLICY "Public read gallery" ON storage.objects FOR SELECT USING (bucket_
 CREATE POLICY "Authenticated upload gallery" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'gallery' AND auth.role() = 'authenticated');
 CREATE POLICY "Owners delete gallery" ON storage.objects FOR DELETE USING (bucket_id = 'gallery' AND (storage.foldername(name))[1] = auth.uid()::text);
 
--- Policies for 'payment_proofs'
-CREATE POLICY "Public view payment proofs" ON storage.objects FOR SELECT USING (bucket_id = 'payment_proofs');
+-- Policies for 'payment_proofs' (PRIVATE: hanya pemilik & admin via service role)
+CREATE POLICY "Users view own payment proofs" ON storage.objects FOR SELECT TO authenticated USING (bucket_id = 'payment_proofs' AND (storage.foldername(name))[1] = auth.uid()::text);
 CREATE POLICY "Users upload own payment proofs" ON storage.objects FOR INSERT TO authenticated WITH CHECK (bucket_id = 'payment_proofs' AND (storage.foldername(name))[1] = auth.uid()::text);
 */

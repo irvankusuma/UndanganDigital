@@ -300,7 +300,8 @@ export default function InvitationGuestPage() {
 
       {/* Table */}
       <div style={{ background: 'white', borderRadius: 16, boxShadow: '0 4px 20px rgba(0,0,0,0.05)', border: '1.5px solid #f0f0f0', overflow: 'hidden' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 640 }}>
           <thead>
             <tr style={{ borderBottom: '1.5px solid #f5f5f5', background: '#FAFAFA' }}>
               {['NAMA TAMU', 'KATEGORI', 'JUMLAH', 'STATUS RSVP', 'LINK PERSONAL', 'AKSI'].map(h => (
@@ -392,6 +393,7 @@ export default function InvitationGuestPage() {
             })}
           </tbody>
         </table>
+        </div>
 
         {filtered.length === 0 && (
           <div style={{ padding: '48px 20px', textAlign: 'center' }}>

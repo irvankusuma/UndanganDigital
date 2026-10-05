@@ -2,7 +2,7 @@
 
 @import "tailwindcss";
 
-:root {
+@theme {
   --color-gold: #C9A96E;
   --color-gold-light: #E8D5B0;
   --color-gold-dark: #A07842;

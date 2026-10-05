@@ -34,9 +34,17 @@ export interface Invitation {
   bride_name?: string
   bride_father_name?: string
   bride_mother_name?: string
+  bride_child_order?: string
+  bride_father_is_deceased?: boolean
+  bride_mother_is_deceased?: boolean
+  bride_photo?: string
   groom_name?: string
   groom_father_name?: string
   groom_mother_name?: string
+  groom_child_order?: string
+  groom_father_is_deceased?: boolean
+  groom_mother_is_deceased?: boolean
+  groom_photo?: string
   description?: string
   greeting_text?: string
   story?: string

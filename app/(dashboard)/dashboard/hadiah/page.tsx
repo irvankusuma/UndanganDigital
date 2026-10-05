@@ -5,46 +5,54 @@ import { motion } from 'framer-motion'
 import { Trash2, Edit2, Save, Plus, ToggleLeft, ToggleRight, Star } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { createClient } from '@/lib/supabase/client'
+import { InvitationSwitcher } from '@/components/dashboard/InvitationSwitcher'
+import { useSelectedInvitation } from '@/components/dashboard/useSelectedInvitation'
 
 const BANKS = ['BCA', 'Mandiri', 'BNI', 'BRI', 'CIMB', 'Dana', 'GoPay', 'OVO', 'ShopeePay', 'LinkAja']
 
 export default function HadiahPage() {
   const [enabled, setEnabled] = useState(true)
   const [loading, setLoading] = useState(true)
-  const [currentInvId, setCurrentInvId] = useState<string | null>(null)
+  const { invitations, selectedInvId, selectInvitation, loading: invLoading } = useSelectedInvitation()
+  const currentInvId = selectedInvId
   const [accounts, setAccounts] = useState<any[]>([])
   const [savedAccounts, setSavedAccounts] = useState<any[]>([])
   const [form, setForm] = useState({ bank_name: '', account_number: '', account_name: '', save_globally: true })
   const [editId, setEditId] = useState<string | null>(null)
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchSaved = async () => {
       try {
         const supabase = createClient()
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) return
-
-        const { data: invs } = await supabase.from('invitations').select('id, enable_gifts').eq('user_id', user.id).order('created_at', { ascending: false }).limit(1)
-
-        if (invs && invs.length > 0) {
-          const invId = invs[0].id
-          setCurrentInvId(invId)
-          setEnabled(invs[0].enable_gifts ?? true)
-
-          const { data: accData } = await supabase.from('gift_accounts').select('*').eq('invitation_id', invId).order('created_at', { ascending: true })
-          setAccounts(accData || [])
-        }
-
         const { data: globalData } = await supabase.from('saved_payment_methods').select('*').eq('user_id', user.id).order('created_at', { ascending: false })
         setSavedAccounts(globalData || [])
+      } catch (err) {
+        console.error(err)
+      }
+    }
+    fetchSaved()
+  }, [])
+
+  useEffect(() => {
+    if (!selectedInvId) { if (!invLoading) { setAccounts([]); setLoading(false) } return }
+    const fetchInvData = async () => {
+      setLoading(true)
+      try {
+        const supabase = createClient()
+        const { data: inv } = await supabase.from('invitations').select('id, enable_gifts').eq('id', selectedInvId).single()
+        if (inv) setEnabled(inv.enable_gifts ?? true)
+        const { data: accData } = await supabase.from('gift_accounts').select('*').eq('invitation_id', selectedInvId).order('created_at', { ascending: true })
+        setAccounts(accData || [])
       } catch (err) {
         console.error(err)
       } finally {
         setLoading(false)
       }
     }
-    fetchData()
-  }, [])
+    fetchInvData()
+  }, [selectedInvId, invLoading])
 
   const handleToggle = async () => {
     if (!currentInvId) return
@@ -123,9 +131,12 @@ export default function HadiahPage() {
       <div style={{ marginBottom: 32 }}>
         <h1 style={{ fontSize: 28, fontWeight: 700, color: '#1a1a1a', marginBottom: 4 }}>Hadiah Digital (E-Wallet & Bank)</h1>
         <p style={{ fontSize: 14, color: '#888' }}>Kelola daftar rekening agar memudahkan tamu memberikan kado digital.</p>
+        <div style={{ marginTop: 16 }}>
+          <InvitationSwitcher invitations={invitations} selectedInvId={selectedInvId} onChange={selectInvitation} />
+        </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.8fr', gap: 32 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 340px), 1fr))', gap: 32 }}>
         {/* Form and Active */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
           <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} style={{ background: 'white', border: '1.5px solid #f0f0f0', borderRadius: 20, padding: 24 }}>
@@ -137,7 +148,7 @@ export default function HadiahPage() {
               </button>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: 16, marginBottom: 16 }}>
               <div>
                 <label style={{ fontSize: 12, fontWeight: 600, color: '#666', marginBottom: 8, display: 'block' }}>Bank / E-Wallet</label>
                 <select value={form.bank_name} onChange={e => setForm({ ...form, bank_name: e.target.value })} className="input-elegant" style={{ fontSize: 13 }}>

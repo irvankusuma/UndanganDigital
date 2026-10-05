@@ -11,6 +11,13 @@ interface CoupleSectionProps {
 }
 
 export function CoupleSection({ inv, colorHex, tFont }: CoupleSectionProps) {
+  const parentsLine = (father?: string, mother?: string, fatherDeceased?: boolean, motherDeceased?: boolean) => {
+    if (!father && !mother) return null
+    const f = father ? `${fatherDeceased ? 'Alm. Bapak ' : 'Bapak '}${father}` : null
+    const m = mother ? `${motherDeceased ? 'Almh. Ibu ' : 'Ibu '}${mother}` : null
+    return [f, m].filter(Boolean).join(' & ')
+  }
+
   return (
     <section style={{ padding: '100px 24px', background: 'white', position: 'relative', overflow: 'hidden' }}>
       {/* Subtle decoration */}
@@ -70,8 +77,12 @@ export function CoupleSection({ inv, colorHex, tFont }: CoupleSectionProps) {
                   width: '100%', height: '100%', borderRadius: '50%', 
                   background: `linear-gradient(135deg, ${colorHex}10, ${colorHex}20)`,
                   display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 64,
-                  boxShadow: `0 20px 40px ${colorHex}10`
-                }}>👰</div>
+                  boxShadow: `0 20px 40px ${colorHex}10`, overflow: 'hidden'
+                }}>
+                  {inv.bride_photo
+                    ? <img src={inv.bride_photo} alt={inv.bride_name || 'Pengantin Wanita'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    : '👰'}
+                </div>
               </div>
               <h3 style={{ 
                 fontFamily: tFont, 
@@ -82,11 +93,11 @@ export function CoupleSection({ inv, colorHex, tFont }: CoupleSectionProps) {
               }}>
                 {inv.bride_name}
               </h3>
-              <p style={{ fontSize: 11, color: colorHex, fontWeight: 800, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 8 }}>Putri tercinta dari:</p>
+              <p style={{ fontSize: 11, color: colorHex, fontWeight: 800, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 8 }}>
+                {inv.bride_child_order ? `Putri ${inv.bride_child_order} dari:` : 'Putri tercinta dari:'}
+              </p>
               <p style={{ fontSize: 16, color: '#555', fontWeight: 500 }}>
-                {inv.bride_father_name && inv.bride_mother_name 
-                  ? `Bapak ${inv.bride_father_name} & Ibu ${inv.bride_mother_name}`
-                  : `Bapak ${inv.bride_father_name || '...'} & Ibu ${inv.bride_mother_name || '...'}`}
+                {parentsLine(inv.bride_father_name, inv.bride_mother_name, inv.bride_father_is_deceased, inv.bride_mother_is_deceased) || 'Bapak ... & Ibu ...'}
               </p>
             </motion.div>
 
@@ -113,8 +124,12 @@ export function CoupleSection({ inv, colorHex, tFont }: CoupleSectionProps) {
                    width: '100%', height: '100%', borderRadius: '50%', 
                    background: `linear-gradient(135deg, ${colorHex}10, ${colorHex}20)`,
                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 64,
-                   boxShadow: `0 20px 40px ${colorHex}10`
-                }}>🤵</div>
+                   boxShadow: `0 20px 40px ${colorHex}10`, overflow: 'hidden'
+                }}>
+                  {inv.groom_photo
+                    ? <img src={inv.groom_photo} alt={inv.groom_name || 'Pengantin Pria'} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    : '🤵'}
+                </div>
               </div>
               <h3 style={{ 
                 fontFamily: tFont, 
@@ -125,11 +140,11 @@ export function CoupleSection({ inv, colorHex, tFont }: CoupleSectionProps) {
               }}>
                 {inv.groom_name}
               </h3>
-              <p style={{ fontSize: 11, color: colorHex, fontWeight: 800, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 8 }}>Putra tercinta dari:</p>
+              <p style={{ fontSize: 11, color: colorHex, fontWeight: 800, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 8 }}>
+                {inv.groom_child_order ? `Putra ${inv.groom_child_order} dari:` : 'Putra tercinta dari:'}
+              </p>
               <p style={{ fontSize: 16, color: '#555', fontWeight: 500 }}>
-                {inv.groom_father_name && inv.groom_mother_name 
-                  ? `Bapak ${inv.groom_father_name} & Ibu ${inv.groom_mother_name}`
-                  : `Bapak ${inv.groom_father_name || '...'} & Ibu ${inv.groom_mother_name || '...'}`}
+                {parentsLine(inv.groom_father_name, inv.groom_mother_name, inv.groom_father_is_deceased, inv.groom_mother_is_deceased) || 'Bapak ... & Ibu ...'}
               </p>
             </motion.div>
           </div>

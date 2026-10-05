@@ -20,6 +20,7 @@ export default function DashboardPage() {
   })
   const [recentRSVP, setRecentRSVP] = useState<any[]>([])
   const [recentWishes, setRecentWishes] = useState<any[]>([])
+  const [searchQuery, setSearchQuery] = useState('')
 
   useEffect(() => {
     const load = async () => {
@@ -28,7 +29,7 @@ export default function DashboardPage() {
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) return
 
-        const { data: invs } = await supabase.from('invitations').select('id, event_name, slug, event_date').eq('user_id', user.id).order('created_at', { ascending: false })
+        const { data: invs } = await supabase.from('invitations').select('id, event_name, slug, event_date, location_name, location_address').eq('user_id', user.id).order('created_at', { ascending: false })
         
         if (!invs || invs.length === 0) {
           setLoading(false)
@@ -82,6 +83,10 @@ export default function DashboardPage() {
   const presentPercent = stats.totalTamu ? Math.round((stats.tamuHadir / stats.totalTamu) * 100) : 0;
   const absentPercent = stats.totalTamu ? Math.round((stats.tamuBerhalangan / stats.totalTamu) * 100) : 0;
   const pendingPercent = stats.totalTamu ? Math.round((stats.tamuPending / stats.totalTamu) * 100) : 0;
+
+  const displayedRSVP = searchQuery.trim()
+    ? recentRSVP.filter(g => (g.guest_name || '').toLowerCase().includes(searchQuery.trim().toLowerCase()) || (g.email || '').toLowerCase().includes(searchQuery.trim().toLowerCase()))
+    : recentRSVP;
 
   const STATS_CARDS = [
     { label: 'Total Tamu', value: String(stats.totalTamu), icon: Users, color: '#3B82F6', bg: '#EFF6FF', tag: stats.totalTamu > 0 ? `${stats.totalTamu} orang` : 'Belum ada', tagColor: '#10B981', tagBg: '#D1FAE5', tagType: stats.totalTamu > 0 ? 'badge' : 'text' },
@@ -318,7 +323,7 @@ export default function DashboardPage() {
                     <p style={{ fontSize: 14, fontWeight: 700, color: '#1e293b', marginBottom: 4 }}>
                       {firstInv.event_date ? new Date(firstInv.event_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : 'Tanggal Belum Ditentukan'}
                     </p>
-                    <p style={{ fontSize: 12, color: '#64748b' }}>Jakarta, Indonesia</p>
+                    <p style={{ fontSize: 12, color: '#64748b' }}>{firstInv.location_name || firstInv.location_address || 'Lokasi belum ditentukan'}</p>
                   </div>
 
                   <Link 
@@ -363,7 +368,7 @@ export default function DashboardPage() {
             </h3>
             <div style={{ display: 'flex', alignItems: 'center', background: '#f8fafc', padding: '6px 12px', borderRadius: 8, border: '1px solid #e2e8f0', color: '#94a3b8' }}>
               <span style={{ fontSize: 13, marginRight: 8 }}>🔍</span>
-              <input type="text" placeholder="Cari tamu..." style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: 13, color: '#475569', width: 120 }} />
+              <input type="text" placeholder="Cari tamu..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: 13, color: '#475569', width: 120 }} />
             </div>
           </div>
 
@@ -372,13 +377,12 @@ export default function DashboardPage() {
               <tr style={{ borderBottom: '1px solid #f1f5f9', color: '#64748b', textAlign: 'left', fontSize: 10, textTransform: 'uppercase', letterSpacing: 1 }}>
                 <th style={{ paddingBottom: 16, fontWeight: 700 }}>NAMA TAMU</th>
                 <th style={{ paddingBottom: 16, fontWeight: 700 }}>STATUS</th>
-                <th style={{ paddingBottom: 16, fontWeight: 700 }}>PASANGAN</th>
-                <th style={{ paddingBottom: 16, fontWeight: 700, textAlign: 'right' }}>AKSI</th>
+                <th style={{ paddingBottom: 16, fontWeight: 700, textAlign: 'right' }}>TANGGAL</th>
               </tr>
             </thead>
             <tbody>
-              {recentRSVP.length > 0 ? recentRSVP.map((row, idx) => (
-                <tr key={row.id} style={{ borderBottom: idx === recentRSVP.length - 1 ? 'none' : '1px solid #f1f5f9' }}>
+              {displayedRSVP.length > 0 ? displayedRSVP.map((row, idx) => (
+                <tr key={row.id} style={{ borderBottom: idx === displayedRSVP.length - 1 ? 'none' : '1px solid #f1f5f9' }}>
                   <td style={{ padding: '16px 0' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                       <div style={{
@@ -404,14 +408,13 @@ export default function DashboardPage() {
                       {row.status === 'attending' ? 'Hadir' : 'Tidak'}
                     </span>
                   </td>
-                  <td style={{ padding: '16px 0', color: '#64748b' }}>-</td>
-                  <td style={{ padding: '16px 0', textAlign: 'right', color: '#cbd5e1' }}>
-                    <span style={{ cursor: 'pointer', fontWeight: 800 }}>•••</span>
+                  <td style={{ padding: '16px 0', color: '#94a3b8', fontSize: 12, textAlign: 'right', whiteSpace: 'nowrap' }}>
+                    {row.created_at ? new Date(row.created_at).toLocaleDateString('id-ID', { month: 'short', day: 'numeric' }) : '-'}
                   </td>
                 </tr>
               )) : (
                 <tr>
-                  <td colSpan={4} style={{ padding: '40px 0', textAlign: 'center', color: '#94a3b8' }}>Belum ada tamu</td>
+                  <td colSpan={3} style={{ padding: '40px 0', textAlign: 'center', color: '#94a3b8' }}>Belum ada tamu</td>
                 </tr>
               )}
             </tbody>
