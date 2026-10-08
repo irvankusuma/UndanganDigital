@@ -16,11 +16,9 @@
   --font-sans: 'Poppins', system-ui, sans-serif;
 }
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
+/* Reset margin/padding/box-sizing is handled by Tailwind preflight.
+   An unlayered `* {}` reset here would override ALL Tailwind utilities
+   (v4 utilities live in cascade layers, unlayered CSS always wins). */
 
 html {
   scroll-behavior: smooth;

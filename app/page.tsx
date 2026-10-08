@@ -24,9 +24,9 @@ const THEMES = [
 ]
 
 const STEPS = [
-  { num: '1', title: 'Daftar Gratis', desc: 'Buat akun dalam 30 detik. Tanpa kartu kredit, tanpa biaya tersembunyi.' },
+  { num: '1', title: 'Daftar Akun', desc: 'Buat akun dalam 30 detik untuk mulai merancang undangan Anda.' },
   { num: '2', title: 'Rancang Undangan', desc: 'Isi detail acara, unggah foto, pilih tema dan musik lewat wizard langkah demi langkah.' },
-  { num: '3', title: 'Sebarkan Kebahagiaan', desc: 'Terbitkan dan kirim link personal ke setiap tamu via WhatsApp dalam sekali klik.' },
+  { num: '3', title: 'Aktifkan & Sebarkan', desc: 'Aktifkan paket Rp 30.000 / 90 hari, lalu kirim link personal ke setiap tamu via WhatsApp.' },
 ]
 
 export default function LandingPage() {
@@ -53,8 +53,8 @@ export default function LandingPage() {
             <Link href="/login" className="text-sm font-semibold text-gray-700 hover:text-rose no-underline px-3 py-2">
               Masuk
             </Link>
-            <Link href="/register" className="text-sm font-semibold text-white no-underline px-4 py-2 rounded-full bg-gradient-to-r from-rose to-rose-dark shadow-md shadow-rose/30 hover:opacity-90 transition-opacity">
-              Daftar Gratis
+            <Link href="/register" className="text-sm font-semibold text-white no-underline px-4 py-2 rounded-full bg-gradient-to-r from-rose to-rose-dark shadow-md shadow-rose/30 hover:opacity-90 transition-opacity whitespace-nowrap">
+              Daftar Sekarang
             </Link>
           </div>
         </div>
@@ -79,15 +79,15 @@ export default function LandingPage() {
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link href="/register" className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-full bg-gradient-to-r from-rose to-rose-dark text-white font-bold text-sm sm:text-base no-underline shadow-lg shadow-rose/30 hover:-translate-y-0.5 transition-transform">
-              Mulai Buat Undangan — Gratis <ArrowRight size={18} />
+              Mulai Buat Undangan <ArrowRight size={18} />
             </Link>
             <a href="#fitur" className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-full bg-white border-2 border-gray-200 text-gray-700 font-bold text-sm sm:text-base no-underline hover:border-rose hover:text-rose transition-colors">
               Lihat Fitur Lengkap
             </a>
           </div>
           <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3 mt-10 text-xs sm:text-sm text-gray-400 font-medium">
-            <span className="inline-flex items-center gap-1.5"><Check size={14} className="text-emerald-500" /> Gratis 1 undangan</span>
-            <span className="inline-flex items-center gap-1.5"><Check size={14} className="text-emerald-500" /> Tanpa kartu kredit</span>
+            <span className="inline-flex items-center gap-1.5"><Check size={14} className="text-emerald-500" /> Rp 30.000 untuk 90 hari</span>
+            <span className="inline-flex items-center gap-1.5"><Check size={14} className="text-emerald-500" /> Undangan tanpa batas</span>
             <span className="inline-flex items-center gap-1.5"><Check size={14} className="text-emerald-500" /> Tampil sempurna di HP & desktop</span>
           </div>
         </div>
@@ -159,49 +159,30 @@ export default function LandingPage() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-14">
             <p className="text-xs font-bold tracking-[0.3em] uppercase text-rose mb-3">Harga</p>
-            <h2 className="font-serif text-3xl sm:text-4xl font-bold text-gray-900 mb-4">Mulai Gratis, Upgrade Kapan Saja</h2>
+            <h2 className="font-serif text-3xl sm:text-4xl font-bold text-gray-900 mb-4">Satu Paket Sederhana, Tanpa Kejutan</h2>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-3xl mx-auto">
-            {/* Free */}
-            <div className="bg-white rounded-3xl border border-gray-100 p-8 shadow-sm flex flex-col">
-              <h3 className="font-bold text-gray-900 text-lg mb-1">Gratis</h3>
-              <p className="text-xs text-gray-400 mb-6">Untuk mencoba platform</p>
-              <div className="mb-6">
-                <span className="text-4xl font-extrabold text-gray-900">Rp 0</span>
-              </div>
-              <ul className="space-y-3 mb-8 flex-1">
-                {['1 undangan digital', 'RSVP & buku tamu', 'Link personal per tamu', 'Galeri foto & musik latar', 'Statistik tamu'].map(i => (
-                  <li key={i} className="flex items-start gap-2 text-sm text-gray-600">
-                    <Check size={16} className="text-emerald-500 mt-0.5 flex-shrink-0" /> {i}
-                  </li>
-                ))}
-              </ul>
-              <Link href="/register" className="block text-center py-3 rounded-full border-2 border-gray-200 text-gray-700 font-bold text-sm no-underline hover:border-rose hover:text-rose transition-colors">
-                Daftar Gratis
-              </Link>
-            </div>
-            {/* Premium */}
+          <div className="max-w-md mx-auto">
             <div className="relative bg-white rounded-3xl border-2 border-rose/40 p-8 shadow-xl shadow-rose/10 flex flex-col">
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-rose to-rose-dark text-white text-[10px] font-bold uppercase tracking-wider px-4 py-1 rounded-full shadow-md">
-                Paling Populer
-              </div>
               <h3 className="font-bold text-gray-900 text-lg mb-1">Premium</h3>
-              <p className="text-xs text-gray-400 mb-6">Sekali bayar, aktif 1 bulan penuh</p>
+              <p className="text-xs text-gray-400 mb-6">Satu paket untuk seluruh acara Anda</p>
               <div className="mb-6">
                 <span className="text-4xl font-extrabold text-gray-900">Rp 30.000</span>
-                <span className="text-sm text-gray-400"> / undangan</span>
+                <span className="text-sm text-gray-400"> / 90 hari</span>
               </div>
-              <ul className="space-y-3 mb-8 flex-1">
-                {['Semua fitur paket Gratis', 'Undangan tanpa batas', 'Kado digital (rekening & e-wallet)', 'Prioritas dukungan', 'Ekspor data tamu CSV'].map(i => (
+              <ul className="space-y-3 mb-8">
+                {['Undangan tanpa batas', 'RSVP & buku tamu', 'Link personal per tamu', 'Galeri foto & musik latar', 'Kado digital (rekening & e-wallet)', 'Ekspor data tamu CSV', 'Prioritas dukungan'].map(i => (
                   <li key={i} className="flex items-start gap-2 text-sm text-gray-600">
                     <Check size={16} className="text-rose mt-0.5 flex-shrink-0" /> {i}
                   </li>
                 ))}
               </ul>
               <Link href="/register" className="block text-center py-3 rounded-full bg-gradient-to-r from-rose to-rose-dark text-white font-bold text-sm no-underline shadow-lg shadow-rose/30 hover:opacity-90 transition-opacity">
-                Pilih Premium
+                Daftar Sekarang
               </Link>
             </div>
+            <p className="text-center text-xs text-gray-400 mt-6">
+              Sekali bayar per periode aktif — tanpa biaya tersembunyi. Pembayaran diverifikasi oleh admin.
+            </p>
           </div>
         </div>
       </section>
@@ -216,7 +197,7 @@ export default function LandingPage() {
           </h2>
           <p className="text-gray-300 text-sm sm:text-base mb-8 max-w-xl mx-auto leading-relaxed">
             Ribuan pasangan telah mempercayakan undangan mereka pada EternalInvite.
-            Giliran Anda — gratis untuk dimulai.
+            Giliran Anda — aktif 90 hari penuh hanya Rp 30.000.
           </p>
           <Link href="/register" className="inline-flex items-center gap-2 px-8 py-4 rounded-full bg-gradient-to-r from-rose to-rose-dark text-white font-bold text-sm sm:text-base no-underline shadow-xl shadow-rose/30 hover:-translate-y-0.5 transition-transform">
             Buat Undangan Saya <ArrowRight size={18} />

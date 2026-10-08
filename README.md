@@ -1,36 +1,72 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# EternalInvite — Platform Undangan Pernikahan Digital
 
-## Getting Started
+Platform SaaS untuk membuat dan mengelola undangan pernikahan digital: halaman undangan publik yang indah (5 tema), RSVP, buku tamu dengan moderasi, galeri, musik, kado digital, dan dashboard manajemen tamu.
 
-First, run the development server:
+## Stack
+
+- **Next.js 16** (App Router, Turbopack) + React 19 + TypeScript
+- **Tailwind CSS 4**
+- **Supabase** — Auth, Postgres (RLS), Storage
+- **NextAuth v4** (Credentials) — khusus panel admin
+- **framer-motion**, **lucide-react**, **react-hot-toast**
+
+## Menjalankan Lokal
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev      # http://localhost:3000
+npm run build    # build produksi
+npm start        # jalankan hasil build
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Variabel Environment (`.env.local`)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Variabel | Kegunaan |
+|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | URL proyek Supabase |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Anon/public key Supabase |
+| `SUPABASE_SERVICE_ROLE_KEY` | Service-role key untuk operasi admin (jangan pernah diekspos ke client) |
+| `NEXTAUTH_SECRET` | Secret JWT NextAuth |
+| `NEXTAUTH_URL` | Base URL aplikasi, mis. `http://localhost:3000` |
+| `ADMIN_USERNAME` | Username login panel admin |
+| `ADMIN_PASSWORD` | Password login panel admin |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+> Jika `NEXT_PUBLIC_SUPABASE_URL` tidak valid, halaman register/login menampilkan peringatan dan tombol dinonaktifkan.
 
-## Learn More
+## Setup Database
 
-To learn more about Next.js, take a look at the following resources:
+1. Buat proyek di [supabase.com](https://supabase.com).
+2. Buka **SQL Editor**, jalankan isi `supabase/schema.sql` (membuat tabel, RLS, trigger `handle_new_user` & `prevent_plan_self_upgrade`, serta bucket Storage).
+3. Jika database sudah ada dari versi sebelumnya, jalankan `supabase/migration_v3.sql` (idempoten) untuk menambah kolom baru, memperketat RLS ucapan/RSVP, dan membuat bucket `payment_proofs` privat.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Bucket Storage
+- `gallery` — publik (baca), upload oleh user terautentikasi
+- `payment_proofs` — **privat**; admin melihat bukti transfer lewat signed URL
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Struktur Route Penting
 
-## Deploy on Vercel
+| Route | Keterangan |
+|---|---|
+| `/` | Landing page produk |
+| `/register`, `/login` | Autentikasi user |
+| `/dashboard` | Ikhtisar user |
+| `/dashboard/undangan` | Daftar undangan (per-user, pagination) |
+| `/dashboard/tamu`, `/pesan`, `/hadiah`, `/kustomisasi` | Manajemen (mendukung multi-undangan) |
+| `/dashboard/pengaturan` | Profil, kata sandi, preferensi notifikasi |
+| `/undangan/[slug]` | Halaman undangan publik |
+| `/admin/login` | Login admin (NextAuth) |
+| `/admin/dashboard`, `/admin/transactions` | Panel admin (proteksi middleware) |
+| `/api/admin/transactions` | Approve/reject pembayaran (server-side, service-role) |
+| `/privacy`, `/terms` | Dokumen legal |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Keamanan
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- RLS membatasi anon hanya melihat undangan `active/completed` dan ucapan berstatus `visible`.
+- Upgrade plan tidak bisa dilakukan client-side: trigger `prevent_plan_self_upgrade` menolak perubahan plan kecuali lewat `service_role`.
+- Approve transaksi hanya lewat `/api/admin/transactions` dengan sesi admin + service-role key.
+- Middleware (`proxy.ts`) melindungi route `/admin/*` dan `/dashboard/*`.
+
+## Catatan
+
+- `proxy.ts` adalah middleware aktif Next.js 16 — **jangan dihapus**.
+- Harga paket Premium: **Rp 30.000 / 90 hari** (per akun, undangan tanpa batas). Tidak ada paket gratis.

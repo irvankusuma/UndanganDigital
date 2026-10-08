@@ -74,7 +74,7 @@ export default function UpgradePage() {
   }
 
   const features = [
-    'Semua fitur dari paket Gratis',
+    'Semua fitur platform tanpa batasan',
     'Kapasitas Buku Tamu tak terbatas (Unlimited)',
     'Akses ke semua template desain Premium',
     'Fitur RSVP & Konfirmasi Kehadiran lanjutan',
@@ -118,12 +118,12 @@ export default function UpgradePage() {
             </div>
 
             <h2 style={{ fontSize: 40, fontWeight: 800, color: '#1e293b', marginBottom: 8 }}>
-              Paket Pro <span style={{ color: '#E8627A' }}>1 Bulan</span>
+              Paket Premium <span style={{ color: '#E8627A' }}>90 Hari</span>
             </h2>
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'center', gap: 4, marginBottom: 32 }}>
               <span style={{ fontSize: 18, fontWeight: 700, color: '#64748b', marginTop: 6 }}>Rp</span>
               <span style={{ fontSize: 48, fontWeight: 800, color: '#1e293b', letterSpacing: -1 }}>30.000</span>
-              <span style={{ fontSize: 16, fontWeight: 500, color: '#94a3b8', alignSelf: 'flex-end', marginBottom: 8 }}>/ bln</span>
+              <span style={{ fontSize: 16, fontWeight: 500, color: '#94a3b8', alignSelf: 'flex-end', marginBottom: 8 }}>/ 90 hari</span>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16, width: '100%', maxWidth: 400, textAlign: 'left', marginBottom: 40 }}>
@@ -274,7 +274,7 @@ export default function UpgradePage() {
               Bukti Berhasil Diunggah!
             </h2>
             <p style={{ fontSize: 16, color: '#64748b', maxWidth: 400, margin: '0 auto 32px', lineHeight: 1.6 }}>
-              Terima kasih. Kami telah menerima bukti pembayaran Anda sejumlah <b>Rp 30.000</b>. Admin sedang meninjau transfer Anda dan akun Anda akan di-upgrade ke Paket Pro segera.
+              Terima kasih. Kami telah menerima bukti pembayaran Anda sejumlah <b>Rp 30.000</b>. Admin sedang meninjau transfer Anda dan akun Anda akan di-upgrade ke Paket Premium (aktif 90 hari) segera.
             </p>
             
             <button

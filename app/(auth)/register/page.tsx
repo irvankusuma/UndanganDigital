@@ -13,6 +13,7 @@ export default function RegisterPage() {
   const [form, setForm] = useState({ name: '', email: '', password: '', confirm: '' })
   const [showPw, setShowPw] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [needsConfirmation, setNeedsConfirmation] = useState(false)
 
   const strength = form.password.length >= 8 ? (form.password.match(/[A-Z]/) && form.password.match(/[0-9]/) ? 3 : 2) : (form.password.length > 0 ? 1 : 0)
   const strengthLabel = ['', 'Lemah', 'Sedang', 'Kuat'][strength]
@@ -33,7 +34,7 @@ export default function RegisterPage() {
     setLoading(true)
     try {
       const supabase = createClient()
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email: form.email,
         password: form.password,
         options: {
@@ -43,8 +44,13 @@ export default function RegisterPage() {
       })
       if (error) throw error
 
-      toast.success('Pendaftaran berhasil! Selamat datang di EternalInvite.')
-      router.push('/dashboard')
+      if (data.session) {
+        toast.success('Pendaftaran berhasil! Selamat datang di EternalInvite.')
+        router.push('/dashboard')
+      } else {
+        setNeedsConfirmation(true)
+        toast.success('Akun dibuat! Silakan konfirmasi melalui email Anda.')
+      }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Terjadi kesalahan'
       toast.error(message.includes('already registered') ? 'Email sudah terdaftar' : message)
@@ -84,7 +90,7 @@ export default function RegisterPage() {
 
           <div style={{ marginTop: 40 }}>
             {[
-              'Gratis untuk 1 undangan',
+              'Aktif 90 hari setelah pembayaran',
               'RSVP dan Buku Tamu',
               'Statistik tamu real-time',
               'Link personal per tamu',
@@ -134,6 +140,13 @@ export default function RegisterPage() {
             <div style={{ marginBottom: 20, padding: '14px 16px', borderRadius: 12, background: '#FEF2F2', border: '1px solid #FECACA', color: '#B91C1C', fontSize: 13, lineHeight: 1.6 }}>
               <strong>Pendaftaran belum bisa dipakai.</strong><br />
               {supabaseConfigErrorMessage}
+            </div>
+          )}
+
+          {needsConfirmation && (
+            <div style={{ marginBottom: 20, padding: '14px 16px', borderRadius: 12, background: '#FFFBEB', border: '1px solid #FDE68A', color: '#92400E', fontSize: 13, lineHeight: 1.6 }}>
+              <strong>Akun berhasil dibuat.</strong><br />
+              Kami mengirim email konfirmasi ke <b>{form.email}</b>. Buka link di email tersebut untuk mengaktifkan akun, lalu masuk di halaman login. Cek juga folder spam bila tidak muncul.
             </div>
           )}
 
@@ -202,7 +215,7 @@ export default function RegisterPage() {
               </div>
 
               <button type="submit" disabled={loading || !isSupabaseConfigured} className="btn-primary" style={{ width: '100%', fontSize: 15, opacity: !isSupabaseConfigured || loading ? 0.7 : 1 }}>
-                {loading ? 'Mendaftarkan...' : 'Daftar Sekarang — Gratis'}
+                {loading ? 'Mendaftarkan...' : 'Daftar Sekarang'}
               </button>
           </form>
 

@@ -31,12 +31,30 @@ export default function PengaturanPage() {
             email: authUser.email || '',
             phone: profile.phone || ''
           })
+          const prefs = profile.notification_prefs || {}
+          setNotif(prev => ({ ...prev, ...prefs }))
         }
       }
       setLoading(false)
     }
     fetchProfile()
   }, [])
+
+  const toggleNotif = async (key: keyof typeof notif) => {
+    const next = { ...notif, [key]: !notif[key] }
+    setNotif(next)
+    try {
+      const supabase = createClient()
+      const { error } = await supabase
+        .from('profiles')
+        .update({ notification_prefs: next })
+        .eq('id', user.id)
+      if (error) throw error
+    } catch (err: any) {
+      setNotif(notif)
+      toast.error(err.message || 'Gagal menyimpan preferensi notifikasi')
+    }
+  }
 
   const handleSaveProfile = async () => {
     setSaving(true)
@@ -153,7 +171,7 @@ export default function PengaturanPage() {
                 <div style={{ fontSize: 12, color: '#aaa' }}>{item.desc}</div>
               </div>
               <button
-                onClick={() => setNotif(prev => ({ ...prev, [item.key]: !prev[item.key as keyof typeof prev] }))}
+                onClick={() => toggleNotif(item.key as keyof typeof notif)}
                 style={{
                   width: 44, height: 24, borderRadius: 100, border: 'none', cursor: 'pointer',
                   background: notif[item.key as keyof typeof notif] ? '#E8627A' : '#ddd',

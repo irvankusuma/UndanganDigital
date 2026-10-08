@@ -27,7 +27,13 @@ export default function LoginPage() {
       router.refresh()
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Terjadi kesalahan'
-      toast.error(message === 'Invalid login credentials' ? 'Email atau password salah' : message)
+      if (message === 'Invalid login credentials') {
+        toast.error('Email atau password salah')
+      } else if (/not confirmed/i.test(message)) {
+        toast.error('Email belum dikonfirmasi. Buka link konfirmasi di inbox/spam Anda, atau konfirmasi manual lewat Supabase Dashboard → Authentication → Users.')
+      } else {
+        toast.error(message)
+      }
     } finally {
       setLoading(false)
     }
@@ -163,7 +169,7 @@ export default function LoginPage() {
           <div style={{ textAlign: 'center', marginTop: 28, fontSize: 14, color: '#888' }}>
             Belum punya akun?{' '}
             <Link href="/register" style={{ color: '#E8627A', fontWeight: 600, textDecoration: 'none' }}>
-              Daftar gratis
+              Daftar sekarang
             </Link>
           </div>
         </motion.div>

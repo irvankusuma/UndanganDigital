@@ -38,30 +38,33 @@ npm run dev
 3. Tambahkan Environment Variables berikut di Vercel:
 
 ```
-NEXT_PUBLIC_SUPABASE_URL=https://krxvirchsyuryqpffooy.supabase.co
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY=sb_publishable_D8q3-oFyzX8i_mhHtt7Lmw_HkSr0Eym
-NEXT_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_D8q3-oFyzX8i_mhHtt7Lmw_HkSr0Eym
-NEXTAUTH_SECRET=eternalinvite-secret-key-2024-xfg7
+NEXT_PUBLIC_SUPABASE_URL=https://PROJECT_REF_ANDA.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=anon_key_anda
+SUPABASE_SERVICE_ROLE_KEY=service_role_key_anda
+NEXTAUTH_SECRET=ganti_dengan_string_acak_panjang
 NEXTAUTH_URL=https://domain-anda.vercel.app
 ADMIN_USERNAME=admin
-ADMIN_PASSWORD=$2b$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LkdRRmfMJAi
+ADMIN_PASSWORD=bcrypt_hash_password_admin
 ```
 
+> ⚠️ Ganti `NEXT_PUBLIC_SUPABASE_URL` dengan URL proyek Supabase Anda yang **aktif** (cek di Supabase → Settings → API). URL lama yang sudah dihapus akan menyebabkan error `ERR_NAME_NOT_RESOLVED` saat daftar/login.
 > ⚠️ Ganti `NEXTAUTH_URL` dengan URL Vercel Anda yang sebenarnya.
-> ⚠️ `ADMIN_PASSWORD` di atas adalah bcrypt hash dari password `admin123`. Ganti dengan hash baru untuk keamanan.
+> ⚠️ `ADMIN_PASSWORD` wajib berupa bcrypt hash, bukan password polos. Buat hash baru; jangan pakai contoh di repositori.
+> ⚠️ `SUPABASE_SERVICE_ROLE_KEY` hanya dipakai server (approve transaksi). Jangan pernah dipakai di kode client.
 
 ---
 
 ## 🗃️ Database
 
-Jalankan file `supabase/schema.sql` di Supabase SQL Editor untuk setup database.
+1. Jalankan file `supabase/schema.sql` di Supabase SQL Editor untuk setup database awal (tabel, RLS, trigger, bucket Storage).
+2. Jika database sudah ada dari versi sebelumnya, jalankan `supabase/migration_v3.sql` (idempoten) untuk menambah kolom baru, memperketat RLS ucapan/RSVP, dan membuat bucket `payment_proofs` privat.
 
 ---
 
 ## 📱 Alur Halaman
 
 ```
-/ → (cek session) → /login atau /dashboard
+/ → landing page publik (produk)
 /login → masukkan email & password Supabase
 /register → daftar akun baru
 /forgot-password → kirim email reset
@@ -77,12 +80,12 @@ Jalankan file `supabase/schema.sql` di Supabase SQL Editor untuk setup database.
 /dashboard/pesan → buku tamu & moderasi
 /dashboard/hadiah → rekening hadiah digital
 /dashboard/pengaturan → profil & password
-/dashboard/upgrade → upgrade ke Pro
+/dashboard/upgrade → upgrade ke Premium (Rp 30.000 / 90 hari)
 
 /undangan/[slug] → halaman undangan publik
 /undangan/[slug]?to=NamaTamu → undangan dengan nama tamu
 
 /admin/login → login admin (NextAuth)
 /admin/dashboard → panel admin
-/dashboard/admin/transactions → kelola transaksi upgrade
+/admin/transactions → kelola transaksi upgrade (approve/reject)
 ```

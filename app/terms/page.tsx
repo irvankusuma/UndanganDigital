@@ -19,7 +19,7 @@ export default function TermsPage() {
           <p>Anda bertanggung jawab menjaga kerahasiaan kata sandi akun dan seluruh aktivitas yang terjadi di dalamnya. Satu akun bebas dapat memiliki undangan sesuai ketentuan paket yang berlaku.</p>
 
           <h2 style={{ fontSize: 18, fontWeight: 700, color: '#1a1a1a', margin: '28px 0 8px' }}>3. Paket & Pembayaran</h2>
-          <p>Paket Gratis tersedia tanpa biaya. Paket Premium seharga Rp 30.000 diaktifkan setelah pembayaran diverifikasi oleh administrator, dan berlaku selama 1 bulan sejak disetujui. Bukti transfer yang tidak valid dapat ditolak.</p>
+          <p>EternalInvite tersedia dalam satu paket berbayar: Premium seharga Rp 30.000, berlaku selama 90 hari sejak pembayaran diverifikasi oleh administrator. Akun baru dapat mendaftar dan merancang undangan, namun paket aktif setelah pembayaran disetujui. Bukti transfer yang tidak valid dapat ditolak.</p>
 
           <h2 style={{ fontSize: 18, fontWeight: 700, color: '#1a1a1a', margin: '28px 0 8px' }}>4. Konten Pengguna</h2>
           <p>Seluruh konten yang Anda unggah (teks, foto, musik, data tamu) adalah tanggung jawab Anda. Dilarang mengunggah konten yang melanggar hukum, hak cipta pihak lain, atau norma yang berlaku di Indonesia. Kami berhak menurunkan konten yang melanggar ketentuan ini.</p>

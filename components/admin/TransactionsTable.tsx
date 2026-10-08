@@ -47,7 +47,7 @@ export function TransactionsTable({ initialTransactions }: { initialTransactions
 
       const newStatus = action === 'approve' ? 'paid' : 'rejected'
       setTransactions(prev => prev.map(t => (t.id === tx.id ? { ...t, status: newStatus } : t)))
-      toast.success(action === 'approve' ? 'Transaksi disetujui, paket Premium aktif 1 bulan.' : 'Transaksi ditolak.')
+      toast.success(action === 'approve' ? 'Transaksi disetujui, paket Premium aktif 90 hari.' : 'Transaksi ditolak.')
     } catch (err: any) {
       toast.error(err.message || 'Gagal memproses transaksi')
     } finally {
